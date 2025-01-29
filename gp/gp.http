@@ -1,0 +1,6 @@
+@gp_HostAddress = http://localhost:5217
+
+GET {{gp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
