@@ -5,9 +5,9 @@ namespace gp.Models;
 
 public partial class PurchasedProduct
 {
-    public int ItemId { get; set; }
+    public int PurchasedId { get; set; }
 
-    public int? ExpenseId { get; set; }
+    public int? UserId { get; set; }
 
     public string? Category { get; set; }
 
@@ -23,5 +23,7 @@ public partial class PurchasedProduct
 
     public string? ReceiptImage { get; set; }
 
-    public virtual Expense? Expense { get; set; }
+    public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+
+    public virtual User? User { get; set; }
 }

@@ -9,8 +9,6 @@ public partial class MonthlyBill
 
     public int? UserId { get; set; }
 
-    public int? ExpenseId { get; set; }
-
     public string? Name { get; set; }
 
     public string? Issuer { get; set; }
@@ -25,7 +23,7 @@ public partial class MonthlyBill
 
     public DateOnly? EndDate { get; set; }
 
-    public virtual Expense? Expense { get; set; }
+    public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
 
     public virtual User? User { get; set; }
 }

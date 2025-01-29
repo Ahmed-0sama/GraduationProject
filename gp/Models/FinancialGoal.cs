@@ -13,7 +13,5 @@ public partial class FinancialGoal
 
     public double? SavingGoal { get; set; }
 
-    public bool? Triger { get; set; }
-
     public virtual User? User { get; set; }
 }
