@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace gp.Models;
 
 public partial class Expense
 {
-    public int ExpenseId { get; set; }
+    [Key]
+	public int ExpenseId { get; set; }
 
     public int? PurchasedId { get; set; }
 

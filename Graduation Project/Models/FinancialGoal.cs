@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace gp.Models;
 
 public partial class FinancialGoal
 {
-    public int GoalId { get; set; }
+    [Key]
+	public int GoalId { get; set; }
 
     public int? UserId { get; set; }
 

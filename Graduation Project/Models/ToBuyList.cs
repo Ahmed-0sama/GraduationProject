@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace gp.Models;
 
 public partial class ToBuyList
 {
-    public int ListId { get; set; }
+    [Key]
+	public int ListId { get; set; }
 
     public int? UserId { get; set; }
 

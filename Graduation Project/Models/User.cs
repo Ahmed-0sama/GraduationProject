@@ -1,18 +1,16 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using System;
 using System.Collections.Generic;
 
 namespace gp.Models;
 
-public partial class User
+public partial class User:IdentityUser
 {
     public int UserId { get; set; }
 
     public string? Name { get; set; }
-
-    public string? Email { get; set; }
-
-    public string? Password { get; set; }
-
+	
+	public string Email { get; set; }
     public string? Photo { get; set; }
 
     public bool? IsAdmin { get; set; }

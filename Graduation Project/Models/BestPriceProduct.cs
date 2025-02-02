@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace gp.Models;
 
 public partial class BestPriceProduct
 {
-    public int ItemId { get; set; }
+    [Key]
+	public int ItemId { get; set; }
 
-    public int? ListId { get; set; }
+    
+	public int? ListId { get; set; }
 
     public string? Category { get; set; }
 

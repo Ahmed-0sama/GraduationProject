@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace gp.Models;
 
 public partial class MonthlyBill
 {
-    public int BillId { get; set; }
+    [Key]
+	public int BillId { get; set; }
 
     public int? UserId { get; set; }
 
