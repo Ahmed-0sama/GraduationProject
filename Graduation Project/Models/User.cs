@@ -8,9 +8,10 @@ public partial class User:IdentityUser
 {
     public int UserId { get; set; }
 
-    public string? Name { get; set; }
+    public string? FirstName { get; set; }
+    public string? lastName { get; set; }
 	
-	public string Email { get; set; }
+	//public string Email { get; set; }
     public string? Photo { get; set; }
 
     public bool? IsAdmin { get; set; }

@@ -21,19 +21,22 @@ namespace gp.Controllers
 		{
 			this.userManager = userManager;
 			this.configuration = configuration;
+
 		}
 		[HttpPost("Register")]
 		public async Task<IActionResult> Signup(RegisterDTO registerfromform)
 		{
-			if (ModelState.IsValid) {
+			if (ModelState.IsValid)
+			{
 				User user = new User
 				{
-					Name = registerfromform.Name,
+					FirstName = registerfromform.fname,
+					lastName = registerfromform.lname,
 					Email = registerfromform.Email,
 					UserName = registerfromform.Email
 				};
 				IdentityResult result = await userManager.CreateAsync(user, registerfromform.Password);
-				if(result.Succeeded)
+				if (result.Succeeded)
 				{
 					return Ok("Created");
 				}
@@ -45,7 +48,7 @@ namespace gp.Controllers
 			return BadRequest(ModelState);
 		}
 		[HttpPost("Login")]
-		public async Task <IActionResult> Login(LoginDTO log)
+		public async Task<IActionResult> Login(LoginDTO log)
 		{
 			if (ModelState.IsValid)
 			{
@@ -62,14 +65,14 @@ namespace gp.Controllers
 							new Claim(ClaimTypes.Name,userdb.UserName),
 						};
 						var userRole = await userManager.GetRolesAsync(userdb);
-						foreach( var role in userRole)
+						foreach (var role in userRole)
 						{
 							userClaims.Add(new Claim(ClaimTypes.Role, role));
 						}
-						var secretKey=configuration["JWT:key"];
+						var secretKey = configuration["JWT:key"];
 						var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:key"]));
 						var singinCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-						var token =new JwtSecurityToken(
+						var token = new JwtSecurityToken(
 							issuer: configuration["JWT:Issuer"],
 							audience: configuration["JWT:Audience"],
 							claims: userClaims,
@@ -95,5 +98,43 @@ namespace gp.Controllers
 			return Ok(users);
 		}
 
+		[Authorize]
+		[HttpPut("UpdateInfo")]
+		public async Task<IActionResult> UpdateInfo([FromBody] UpdateinfoDTO updateInfoDto)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			// Extract user ID from token
+			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized("User ID not found in token.");
+			}
+
+			// Retrieve user from database
+			var user = await userManager.FindByIdAsync(userId);
+			if (user == null)
+			{
+				return NotFound($"User with ID {userId} not found.");
+			}
+
+			// Update user details
+			user.FirstName = updateInfoDto.fname;
+			user.lastName = updateInfoDto.lname;
+			user.Photo = updateInfoDto.Photo;
+			// Save changes
+			var result = await userManager.UpdateAsync(user);
+			if (result.Succeeded)
+			{
+				return Ok(new { Message = "User information updated successfully." });
+			}
+			else
+			{
+				return BadRequest(result.Errors);
+			}
+		}
 	}
 }

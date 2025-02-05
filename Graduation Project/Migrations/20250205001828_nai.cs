@@ -5,35 +5,31 @@
 namespace Graduation_Project.Migrations
 {
     /// <inheritdoc />
-    public partial class identity2 : Migration
+    public partial class nai : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<string>(
-                name: "UserName",
+                name: "Photo",
                 table: "AspNetUsers",
-                type: "nvarchar(256)",
-                maxLength: 256,
+                type: "nvarchar(max)",
                 nullable: true,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(256)",
-                oldMaxLength: 256);
+                oldClrType: typeof(byte[]),
+                oldType: "varbinary(max)",
+                oldNullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<string>(
-                name: "UserName",
+            migrationBuilder.AlterColumn<byte[]>(
+                name: "Photo",
                 table: "AspNetUsers",
-                type: "nvarchar(256)",
-                maxLength: 256,
-                nullable: false,
-                defaultValue: "",
+                type: "varbinary(max)",
+                nullable: true,
                 oldClrType: typeof(string),
-                oldType: "nvarchar(256)",
-                oldMaxLength: 256,
+                oldType: "nvarchar(max)",
                 oldNullable: true);
         }
     }

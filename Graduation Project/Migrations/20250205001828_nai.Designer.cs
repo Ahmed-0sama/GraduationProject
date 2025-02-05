@@ -12,8 +12,8 @@ using gp.Models;
 namespace Graduation_Project.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250202145845_identity")]
-    partial class identity
+    [Migration("20250205001828_nai")]
+    partial class nai
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -415,12 +415,14 @@ namespace Graduation_Project.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsAdmin")
                         .HasColumnType("bit");
@@ -430,9 +432,6 @@ namespace Graduation_Project.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -464,9 +463,11 @@ namespace Graduation_Project.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("UserName")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("lastName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

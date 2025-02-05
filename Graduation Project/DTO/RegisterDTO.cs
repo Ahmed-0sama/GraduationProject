@@ -5,7 +5,8 @@ namespace Graduation_Project.DTO
 	public class RegisterDTO
 	{
 		[Required]
-		public string Name { get; set; }
+		public string lname { get; set; }
+		public string fname { get; set; }
 
 		[Required, EmailAddress]
 		public string Email { get; set; }
