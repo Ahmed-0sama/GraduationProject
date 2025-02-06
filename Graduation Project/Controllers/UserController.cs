@@ -3,11 +3,13 @@ using Graduation_Project.DTO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using static EmailService;
 
 namespace gp.Controllers
 {
@@ -21,8 +23,8 @@ namespace gp.Controllers
 		{
 			this.userManager = userManager;
 			this.configuration = configuration;
-
 		}
+		
 		[HttpPost("Register")]
 		public async Task<IActionResult> Signup(RegisterDTO registerfromform)
 		{
@@ -91,14 +93,14 @@ namespace gp.Controllers
 			return BadRequest(ModelState);
 		}
 		[Authorize]
-		[HttpGet]
+		[HttpGet("AllUsers")]
 		public async Task<IActionResult> GetUsers()
 		{
 			var users = userManager.Users.ToList();
 			return Ok(users);
 		}
 
-		[Authorize]
+		
 		[HttpPut("UpdateInfo")]
 		public async Task<IActionResult> UpdateInfo([FromBody] UpdateinfoDTO updateInfoDto)
 		{
@@ -124,7 +126,6 @@ namespace gp.Controllers
 			// Update user details
 			user.FirstName = updateInfoDto.fname;
 			user.lastName = updateInfoDto.lname;
-			user.Photo = updateInfoDto.Photo;
 			// Save changes
 			var result = await userManager.UpdateAsync(user);
 			if (result.Succeeded)
@@ -135,6 +136,43 @@ namespace gp.Controllers
 			{
 				return BadRequest(result.Errors);
 			}
+		}
+		[Authorize]
+		[HttpPut("AddPhoto")]
+		public async Task<IActionResult> uploadPhoto(IFormFile file)
+		{
+			if (file == null || file.Length == 0)
+			{
+				return BadRequest("Invalid File");
+			}
+			var user=await userManager.FindByIdAsync(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+			if(user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			using (var memorystream = new MemoryStream())
+			{
+				await file.CopyToAsync(memorystream);
+				user.Photo = memorystream.ToArray();
+
+			}
+			await userManager.UpdateAsync(user);
+			return Ok(new { Message = "Photo uploaded Sucessfully!" });
+		}
+		[Authorize]
+		[HttpGet("GetPhoto")]
+		public async Task<IActionResult> GetPhoto()
+		{
+			var user = await userManager.FindByIdAsync(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			if (user.Photo == null)
+			{
+				return NotFound("No Photo Found");
+			}
+			return File(user.Photo, "image/png");
 		}
 	}
 }

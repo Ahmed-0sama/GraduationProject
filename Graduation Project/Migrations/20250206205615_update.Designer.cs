@@ -12,8 +12,8 @@ using gp.Models;
 namespace Graduation_Project.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250204220818_removeEmail")]
-    partial class removeEmail
+    [Migration("20250206205615_update")]
+    partial class update
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
