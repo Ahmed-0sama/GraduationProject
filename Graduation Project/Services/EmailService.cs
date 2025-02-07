@@ -21,13 +21,16 @@ public class EmailService : IEmailService
 		var smtpPort = int.Parse(_configuration["EmailSettings:SmtpPort"]);
 		var senderEmail = _configuration["EmailSettings:SenderEmail"];
 		var senderPassword = _configuration["EmailSettings:SenderPassword"];
-		var authMethod = _configuration["EmailSettings:AuthMethod"];
 		var useStartTls = bool.TryParse(_configuration["EmailSettings:UseStartTls"], out bool result) ? result : true;
 
 		using (var smtpClient = new SmtpClient(smtpServer, smtpPort))
 		{
 			smtpClient.Credentials = new NetworkCredential(senderEmail, senderPassword);
-			smtpClient.EnableSsl = useStartTls;
+			smtpClient.EnableSsl = false; // Important for Gmail
+			smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
+			smtpClient.UseDefaultCredentials = false;
+			smtpClient.TargetName = "STARTTLS/smtp.gmail.com"; // Ensures TLS encryption
+			smtpClient.EnableSsl = useStartTls; // Use TLS encryption
 
 			var mailMessage = new MailMessage
 			{

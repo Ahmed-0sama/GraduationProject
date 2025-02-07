@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using System.Web;
 using static EmailService;
 
 namespace Graduation_Project.Controllers
@@ -48,7 +49,9 @@ namespace Graduation_Project.Controllers
 			if (user == null)
 				return NotFound("User not found");
 
-			var result = await userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+			var decodedToken = HttpUtility.UrlDecode(model.Token);
+
+			var result = await userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
 
 			if (!result.Succeeded)
 				return BadRequest(result.Errors.Select(e => e.Description));

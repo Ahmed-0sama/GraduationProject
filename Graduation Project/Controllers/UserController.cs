@@ -18,13 +18,15 @@ namespace gp.Controllers
 	public class UserController : ControllerBase
 	{
 		private readonly UserManager<User> userManager;
+		private readonly RoleManager<IdentityRole> roleManager;
 		private readonly IConfiguration configuration;
-		public UserController(UserManager<User> userManager, IConfiguration configuration)
+		public UserController(UserManager<User> userManager, IConfiguration configuration, RoleManager<IdentityRole> roleManager)
 		{
 			this.userManager = userManager;
 			this.configuration = configuration;
+			this.roleManager = roleManager;
 		}
-		
+
 		[HttpPost("Register")]
 		public async Task<IActionResult> Signup(RegisterDTO registerfromform)
 		{
@@ -92,7 +94,7 @@ namespace gp.Controllers
 			}
 			return BadRequest(ModelState);
 		}
-		[Authorize]
+		[Authorize(Roles = "Admin")]
 		[HttpGet("AllUsers")]
 		public async Task<IActionResult> GetUsers()
 		{
@@ -100,7 +102,7 @@ namespace gp.Controllers
 			return Ok(users);
 		}
 
-		
+		[Authorize]
 		[HttpPut("UpdateInfo")]
 		public async Task<IActionResult> UpdateInfo([FromBody] UpdateinfoDTO updateInfoDto)
 		{
@@ -145,8 +147,8 @@ namespace gp.Controllers
 			{
 				return BadRequest("Invalid File");
 			}
-			var user=await userManager.FindByIdAsync(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-			if(user == null)
+			var user = await userManager.FindByIdAsync(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+			if (user == null)
 			{
 				return NotFound("User Not Found");
 			}
@@ -173,6 +175,53 @@ namespace gp.Controllers
 				return NotFound("No Photo Found");
 			}
 			return File(user.Photo, "image/png");
+		}
+		[Authorize(Roles = "Admin")]
+		[HttpGet("UserByEmail{email}")]
+		public async Task<IActionResult> GetUserByEmail(string email)
+		{
+			var user = await userManager.FindByEmailAsync(email);
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			return Ok(user);
+		}
+		[Authorize(Roles="Admin")]
+		[HttpDelete("DeleteUser{email}")]
+		public async Task<IActionResult> DeleteUserByEmail(string email)
+		{
+			if (email == null)
+			{
+				return BadRequest("Email is required");
+			}
+			var user = await userManager.FindByEmailAsync(email);
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			var result = await userManager.DeleteAsync(user);
+			if (result.Succeeded)
+			{
+				return Ok("User Deleted Successfully");
+			}
+			return BadRequest(result.Errors);
+		}
+		[Authorize(Roles = "Admin")]
+		[HttpPut("AssignUserAdmin{userId}")]
+		public async Task<IActionResult> AssignUserAdmin(string userId)
+		{
+			var user = await userManager.FindByIdAsync(userId);
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			var result = await userManager.AddToRoleAsync(user, "Admin");
+			if (result.Succeeded)
+			{
+				return Ok("User Assigned Admin Role Successfully");
+			}
+			return BadRequest(result.Errors);
 		}
 	}
 }
