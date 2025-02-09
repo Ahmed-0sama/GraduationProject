@@ -6,7 +6,7 @@ namespace gp.Models;
 
 public partial class User:IdentityUser
 {
-    public int UserId { get; set; }
+    //public int UserId { get; set; }
 
     public string? FirstName { get; set; }
     public string? lastName { get; set; }
