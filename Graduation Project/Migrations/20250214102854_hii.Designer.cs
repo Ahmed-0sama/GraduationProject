@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using gp.Models;
 
@@ -11,9 +12,11 @@ using gp.Models;
 namespace Graduation_Project.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250214102854_hii")]
+    partial class hii
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -39,9 +42,12 @@ namespace Graduation_Project.Migrations
                     b.Property<double>("Price")
                         .HasColumnType("float");
 
+                    b.Property<int>("ProductItemId")
+                        .HasColumnType("int");
+
                     b.HasKey("PriceID");
 
-                    b.HasIndex("ItemId");
+                    b.HasIndex("ProductItemId");
 
                     b.ToTable("ProductPriceHistories");
                 });
@@ -500,7 +506,7 @@ namespace Graduation_Project.Migrations
                 {
                     b.HasOne("gp.Models.BestPriceProduct", "Product")
                         .WithMany("PriceHistory")
-                        .HasForeignKey("ItemId")
+                        .HasForeignKey("ProductItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

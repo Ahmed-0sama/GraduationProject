@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Graduation_Project.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,8 +28,9 @@ public partial class AppDbContext : IdentityDbContext<User>
     public virtual DbSet<MonthlyBill> MonthlyBills { get; set; }
 
     public virtual DbSet<PurchasedProduct> PurchasedProducts { get; set; }
+	public DbSet<ProductPriceHistory> ProductPriceHistories { get; set; }
 
-    public virtual DbSet<ToBuyList> ToBuyLists { get; set; }
+	public virtual DbSet<ToBuyList> ToBuyLists { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
 

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using gp.Models;
 
@@ -11,9 +12,11 @@ using gp.Models;
 namespace Graduation_Project.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250214093805_PriceHistory")]
+    partial class PriceHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,18 +33,21 @@ namespace Graduation_Project.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PriceID"));
 
-                    b.Property<DateOnly?>("DateRecorded")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("DateRecorded")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("ItemId")
                         .HasColumnType("int");
 
-                    b.Property<double>("Price")
-                        .HasColumnType("float");
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ProductItemId")
+                        .HasColumnType("int");
 
                     b.HasKey("PriceID");
 
-                    b.HasIndex("ItemId");
+                    b.HasIndex("ProductItemId");
 
                     b.ToTable("ProductPriceHistories");
                 });
@@ -217,11 +223,8 @@ namespace Graduation_Project.Migrations
                     b.Property<string>("Category")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateOnly?>("CurrentDate")
+                    b.Property<DateOnly?>("Date")
                         .HasColumnType("date");
-
-                    b.Property<double>("CurrentPrice")
-                        .HasColumnType("float");
 
                     b.Property<string>("Image")
                         .HasColumnType("nvarchar(max)");
@@ -231,6 +234,9 @@ namespace Graduation_Project.Migrations
 
                     b.Property<int>("ListId")
                         .HasColumnType("int");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("float");
 
                     b.Property<string>("ProductName")
                         .HasColumnType("nvarchar(max)");
@@ -500,7 +506,7 @@ namespace Graduation_Project.Migrations
                 {
                     b.HasOne("gp.Models.BestPriceProduct", "Product")
                         .WithMany("PriceHistory")
-                        .HasForeignKey("ItemId")
+                        .HasForeignKey("ProductItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

@@ -61,6 +61,7 @@ namespace Graduation_Project.Controllers
 			{
 				dto.Add(new ToBuyListReceive
 				{
+					id = item.ListId,
 					ProductName = item.ProductName,
 					Date = (DateTime)item.Date
 				});

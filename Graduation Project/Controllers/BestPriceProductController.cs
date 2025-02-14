@@ -1,5 +1,7 @@
 ﻿using gp.Models;
 using Graduation_Project.DTO;
+using Graduation_Project.Migrations;
+using Graduation_Project.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -38,20 +40,27 @@ namespace Graduation_Project.Controllers
 				{
 					ListId = list.ListId,
 					ProductName = dto.productName,
-					Price = dto.price,
+					CurrentPrice = dto.price,
 					ShopName = dto.shopName,
 					Quantity = dto.quantity,
 					Image = dto.image,
 					Category = dto.category,
-					Date = dto.date,
+					CurrentDate = dto.date,
 					Url = dto.url
 				};
 				db.BestPriceProducts.Add(product);
-				db.SaveChanges();
+				await db.SaveChangesAsync();
+				ProductPriceHistory priceHistory = new ProductPriceHistory
+				{
+					ItemId = product.ItemId,
+					Price = dto.price,
+					DateRecorded = dto.date
+				};
+				db.ProductPriceHistories.Add(priceHistory);
+				await db.SaveChangesAsync();
 				return Ok("Product added successfully");
 			}
 			return BadRequest(ModelState);
-
 		}
 		[Authorize]
 		[HttpGet("GetBestPriceProductsDetails/{id}")]
@@ -73,12 +82,12 @@ namespace Graduation_Project.Controllers
 				productsdto.Add(new getitemPriceDetailsDTO
 				{
 					ProductName = product.ProductName,
-					Price = product.Price,
+					Price = product.CurrentPrice,
 					ShopName = product.ShopName,
 					Quantity = product.Quantity,
 					Image = product.Image,
 					Category = product.Category,
-					Date = (DateOnly)product.Date,
+					Date = (DateOnly)product.CurrentDate,
 					Url = product.Url,
 					IsBought = product.IsBought
 				});
@@ -89,7 +98,7 @@ namespace Graduation_Project.Controllers
 		[HttpDelete("DeleteBestPriceProduct/{id}")]
 		public async Task<IActionResult> DeleteBestPriceProduct(int id)
 		{
-			if(id == null)
+			if (id == null)
 			{
 				return BadRequest("Product id is required");
 			}
@@ -119,7 +128,7 @@ namespace Graduation_Project.Controllers
 			getItemPriceDTO productdto = new getItemPriceDTO
 			{
 				ProductName = product.ProductName,
-				Price = product.Price,
+				Price = product.CurrentPrice,
 				ShopName = product.ShopName,
 				IsBought = product.IsBought,
 				Image = product.Image,
@@ -128,7 +137,7 @@ namespace Graduation_Project.Controllers
 		}
 		[Authorize]
 		[HttpPut("MarkPurchased/{id}")]
-		public async Task<IActionResult>MarkPurchased(int id)
+		public async Task<IActionResult> MarkPurchased(int id)
 		{
 			if (id == null)
 			{
@@ -140,17 +149,22 @@ namespace Graduation_Project.Controllers
 				return NotFound("Product not found");
 			}
 			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
-			if(user == null)
+			if (user == null)
 			{
 				return NotFound("User not found");
 			}
+			if(product.IsBought == true)
+			{
+				return BadRequest("Product already marked as purchased");
+			}
 			product.IsBought = true;
+
 			PurchasedProduct purchasedProduct = new PurchasedProduct
 			{
 				UserId = user.Id,
 				Category = product.Category,
-				Date =(DateOnly)product.Date,
-				Price = product.Price,
+				Date = (DateOnly)product.CurrentDate,
+				Price = product.CurrentPrice,
 				Quantity = product.Quantity,
 				ShopName = product.ShopName,
 				ItemName = product.ProductName,
@@ -158,7 +172,31 @@ namespace Graduation_Project.Controllers
 			db.PurchasedProducts.Add(purchasedProduct);
 			db.SaveChanges();
 			return Ok("Product marked as purchased successfully");
-
+		}
+		[Authorize]
+		[HttpGet("GetProductPriceHistory{id}")]
+		public async Task<IActionResult> GetProductHistory(int id)
+		{
+			if (id == null)
+			{
+				return BadRequest("Product id is required");
+			}
+			var product = db.BestPriceProducts.Find(id);
+			if (product == null)
+			{
+				return NotFound("Product not found");
+			}
+			List<ProductPriceHistory> priceHistories = db.ProductPriceHistories.Where(x => x.ItemId == product.ItemId).ToList();
+			List<PriceHistoryDTO> priceHistoriesdto = new List<PriceHistoryDTO>();
+			foreach (var priceHistory in priceHistories)
+			{
+				priceHistoriesdto.Add(new PriceHistoryDTO
+				{
+					Price = priceHistory.Price,
+					DateRecorded = (DateOnly)priceHistory.DateRecorded
+				});
+			}
+			return Ok(priceHistoriesdto);
 		}
 	}
 }

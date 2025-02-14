@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Graduation_Project.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,17 +10,15 @@ public partial class BestPriceProduct
 {
     [Key]
 	public int ItemId { get; set; }
-
-    [ForeignKey(nameof(ListId))]
 	public int ListId { get; set; }
 
     public string? Category { get; set; }
 
     public string? Image { get; set; }
 
-    public DateOnly? Date { get; set; }
+    public DateOnly? CurrentDate { get; set; }
 
-    public double Price { get; set; }
+    public double CurrentPrice { get; set; }
 
     public string? Url { get; set; }
 
@@ -31,5 +30,7 @@ public partial class BestPriceProduct
 
     public bool? IsBought { get; set; }
 
-    public virtual ToBuyList List { get; set; }
+	[ForeignKey("ListId")]
+	public virtual ToBuyList List { get; set; }
+	public virtual List<ProductPriceHistory> PriceHistory { get; set; } = new();
 }
