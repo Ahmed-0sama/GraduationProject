@@ -10,8 +10,8 @@ public partial class BestPriceProduct
     [Key]
 	public int ItemId { get; set; }
 
-    
-	public int? ListId { get; set; }
+    [ForeignKey(nameof(ListId))]
+	public int ListId { get; set; }
 
     public string? Category { get; set; }
 
@@ -19,11 +19,11 @@ public partial class BestPriceProduct
 
     public DateOnly? Date { get; set; }
 
-    public double? Price { get; set; }
+    public double Price { get; set; }
 
     public string? Url { get; set; }
 
-    public int? Quantity { get; set; }
+    public int Quantity { get; set; }
 
     public string? ShopName { get; set; }
 
@@ -31,5 +31,5 @@ public partial class BestPriceProduct
 
     public bool? IsBought { get; set; }
 
-    public virtual ToBuyList? List { get; set; }
+    public virtual ToBuyList List { get; set; }
 }

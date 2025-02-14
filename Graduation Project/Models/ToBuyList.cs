@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace gp.Models;
 
@@ -9,7 +10,7 @@ public partial class ToBuyList
     [Key]
 	public int ListId { get; set; }
 
-    public int? UserId { get; set; }
+    public string UserId { get; set; }
 
     public string? ProductName { get; set; }
 
@@ -17,5 +18,7 @@ public partial class ToBuyList
 
     public virtual ICollection<BestPriceProduct> BestPriceProducts { get; set; } = new List<BestPriceProduct>();
 
-    public virtual User? User { get; set; }
+    [ForeignKey(nameof(UserId))]
+	public virtual User User { get; set; }
+
 }
