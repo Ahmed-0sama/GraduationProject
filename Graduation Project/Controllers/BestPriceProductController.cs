@@ -1,12 +1,17 @@
 ﻿using gp.Models;
 using Graduation_Project.DTO;
-using Graduation_Project.Migrations;
+
 using Graduation_Project.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Security.Claims;
+using System.Text.Json;
+
 
 namespace Graduation_Project.Controllers
 {
@@ -38,7 +43,7 @@ namespace Graduation_Project.Controllers
 				}
 				BestPriceProduct product = new BestPriceProduct
 				{
-					ListId = list.ListId,
+
 					ProductName = dto.productName,
 					CurrentPrice = dto.price,
 					ShopName = dto.shopName,
@@ -75,23 +80,21 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("List not found");
 			}
-			List<BestPriceProduct> products = db.BestPriceProducts.Where(x => x.ListId == id).ToList();
+			BestPriceProduct product = db.BestPriceProducts.FirstOrDefault(x => x.ToBuyListID == id);
 			List<getitemPriceDetailsDTO> productsdto = new List<getitemPriceDetailsDTO>();
-			foreach (var product in products)
+			productsdto.Add(new getitemPriceDetailsDTO
 			{
-				productsdto.Add(new getitemPriceDetailsDTO
-				{
-					ProductName = product.ProductName,
-					Price = product.CurrentPrice,
-					ShopName = product.ShopName,
-					Quantity = product.Quantity,
-					Image = product.Image,
-					Category = product.Category,
-					Date = (DateOnly)product.CurrentDate,
-					Url = product.Url,
-					IsBought = product.IsBought
-				});
-			}
+				ProductName = product.ProductName,
+				Price = product.CurrentPrice,
+				ShopName = product.ShopName,
+				Quantity = product.Quantity,
+				Image = product.Image,
+				Category = product.Category,
+				Date = (DateOnly)product.CurrentDate,
+				Url = product.Url,
+				IsBought = product.IsBought
+			});
+
 			return Ok(productsdto);
 		}
 		[Authorize]
@@ -113,26 +116,27 @@ namespace Graduation_Project.Controllers
 		}
 
 		[Authorize]
-		[HttpGet("GetBestPriceProduct/{id}")]
-		public async Task<IActionResult> GetBestPriceProduct(int id)
+		[HttpGet("GetBestPriceProduct/{listid}")]
+		public async Task<IActionResult> GetBestPriceProduct(int listid)
 		{
-			if (id == null)
+			if (listid <= null)
 			{
 				return BadRequest("Product id is required");
 			}
-			var product = db.BestPriceProducts.Find(id);
-			if (product == null)
+			List<BestPriceProduct> products = await db.BestPriceProducts.Where(l => l.ToBuyListID == listid).ToListAsync();
+			if (products == null)
 			{
 				return NotFound("Product not found");
 			}
-			getItemPriceDTO productdto = new getItemPriceDTO
+			List<getItemPriceDTO> productdto = products.Select(item => new getItemPriceDTO
 			{
-				ProductName = product.ProductName,
-				Price = product.CurrentPrice,
-				ShopName = product.ShopName,
-				IsBought = product.IsBought,
-				Image = product.Image,
-			};
+				ProductName = item.ProductName,
+				Price = item.CurrentPrice,
+				ShopName = item.ShopName,
+				IsBought = item.IsBought,
+				Image = item.Image
+			}).ToList();
+
 			return Ok(productdto);
 		}
 		[Authorize]
@@ -153,7 +157,7 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("User not found");
 			}
-			if(product.IsBought == true)
+			if (product.IsBought == true)
 			{
 				return BadRequest("Product already marked as purchased");
 			}
@@ -198,5 +202,6 @@ namespace Graduation_Project.Controllers
 			}
 			return Ok(priceHistoriesdto);
 		}
+
 	}
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Graduation_Project.Models;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 
@@ -6,12 +7,8 @@ namespace gp.Models;
 
 public partial class User:IdentityUser
 {
-    //public int UserId { get; set; }
-
     public string? FirstName { get; set; }
     public string? lastName { get; set; }
-	
-	//public string Email { get; set; }
     public byte[]? Photo { get; set; }
 
     public bool? IsAdmin { get; set; }
@@ -26,5 +23,5 @@ public partial class User:IdentityUser
 
     public virtual ICollection<PurchasedProduct> PurchasedProducts { get; set; } = new List<PurchasedProduct>();
 
-    public virtual ICollection<ToBuyList> ToBuyLists { get; set; } = new List<ToBuyList>();
+	public virtual ICollection<UserToBuyList> UserToBuyLists { get; set; } = new List<UserToBuyList>();
 }

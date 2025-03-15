@@ -29,148 +29,176 @@ public partial class AppDbContext : IdentityDbContext<User>
 
     public virtual DbSet<PurchasedProduct> PurchasedProducts { get; set; }
 	public DbSet<ProductPriceHistory> ProductPriceHistories { get; set; }
-
+	public DbSet<UserToBuyList> UserToBuyLists { get; set; }
 	public virtual DbSet<ToBuyList> ToBuyLists { get; set; }
+	public virtual DbSet<User> Users { get; set; }
 
-    public virtual DbSet<User> Users { get; set; }
+	protected override void OnModelCreating(ModelBuilder modelBuilder)
+	{
+		base.OnModelCreating(modelBuilder);
+		modelBuilder.Entity<ToBuyList>()
+			.HasIndex(t => t.ProductName)
+			.HasDatabaseName("IX_ToBuyList_ProductName");
+		modelBuilder.Entity<UserToBuyList>()
+			.HasKey(ut => new { ut.UserId, ut.ToBuyListId });
 
-    //protected override void OnModelCreating(ModelBuilder modelBuilder)
-    //{
-    //    modelBuilder.Entity<Alert>(entity =>
-    //    {
-    //        entity.HasKey(e => e.AlertId).HasName("PK__Alert__EBB16AED01FBFC2F");
+		modelBuilder.Entity<UserToBuyList>()
+			.HasOne(ut => ut.User)
+			.WithMany(u => u.UserToBuyLists)
+			.HasForeignKey(ut => ut.UserId);
 
-    //        entity.ToTable("Alert");
+		modelBuilder.Entity<UserToBuyList>()
+			.HasOne(ut => ut.ToBuyList)
+			.WithMany(tl => tl.UserToBuyLists)
+			.HasForeignKey(ut => ut.ToBuyListId);
 
-    //        entity.Property(e => e.AlertId).HasColumnName("AlertID");
-    //        entity.Property(e => e.DateTime).HasColumnType("datetime");
-    //        entity.Property(e => e.Type).HasMaxLength(255);
-    //        entity.Property(e => e.UserId).HasColumnName("UserID");
+		// One-to-Many between ToBuyLists and BestPriceProducts
+		modelBuilder.Entity<BestPriceProduct>()
+			.HasOne(bp => bp.ToBuyList)
+			.WithMany(tl => tl.BestPriceProducts)
+			.HasForeignKey(bp => bp.ToBuyListID);
+		modelBuilder.Entity<PurchasedProduct>()
+	   .HasOne(b => b.bestPriceProduct)
+	   .WithOne(p => p.PurchasedProduct)
+	   .HasForeignKey<PurchasedProduct>(b => b.PurchasedId);
+	}
+	//protected override void OnModelCreating(ModelBuilder modelBuilder)
+	//{
+	//    modelBuilder.Entity<Alert>(entity =>
+	//    {
+	//        entity.HasKey(e => e.AlertId).HasName("PK__Alert__EBB16AED01FBFC2F");
 
-    //        entity.HasOne(d => d.User).WithMany(p => p.Alerts)
-    //            .HasForeignKey(d => d.UserId)
-    //            .HasConstraintName("FK__Alert__UserID__4316F928");
-    //    });
+	//        entity.ToTable("Alert");
 
-    //    modelBuilder.Entity<BestPriceProduct>(entity =>
-    //    {
-    //        entity.HasKey(e => e.ItemId).HasName("PK__BestPric__727E83EB6DEE9C9F");
+	//        entity.Property(e => e.AlertId).HasColumnName("AlertID");
+	//        entity.Property(e => e.DateTime).HasColumnType("datetime");
+	//        entity.Property(e => e.Type).HasMaxLength(255);
+	//        entity.Property(e => e.UserId).HasColumnName("UserID");
 
-    //        entity.ToTable("BestPriceProduct");
+	//        entity.HasOne(d => d.User).WithMany(p => p.Alerts)
+	//            .HasForeignKey(d => d.UserId)
+	//            .HasConstraintName("FK__Alert__UserID__4316F928");
+	//    });
 
-    //        entity.Property(e => e.ItemId).HasColumnName("ItemID");
-    //        entity.Property(e => e.Category).HasMaxLength(255);
-    //        entity.Property(e => e.ListId).HasColumnName("ListID");
-    //        entity.Property(e => e.ProductName).HasMaxLength(255);
-    //        entity.Property(e => e.ShopName).HasMaxLength(255);
+	//    modelBuilder.Entity<BestPriceProduct>(entity =>
+	//    {
+	//        entity.HasKey(e => e.ItemId).HasName("PK__BestPric__727E83EB6DEE9C9F");
 
-    //        entity.HasOne(d => d.List).WithMany(p => p.BestPriceProducts)
-    //            .HasForeignKey(d => d.ListId)
-    //            .HasConstraintName("FK__BestPrice__ListI__403A8C7D");
-    //    });
+	//        entity.ToTable("BestPriceProduct");
 
-    //    modelBuilder.Entity<Expense>(entity =>
-    //    {
-    //        entity.HasKey(e => e.ExpenseId).HasName("PK__Expense__1445CFF3C0E94FB1");
+	//        entity.Property(e => e.ItemId).HasColumnName("ItemID");
+	//        entity.Property(e => e.Category).HasMaxLength(255);
+	//        entity.Property(e => e.ListId).HasColumnName("ListID");
+	//        entity.Property(e => e.ProductName).HasMaxLength(255);
+	//        entity.Property(e => e.ShopName).HasMaxLength(255);
 
-    //        entity.ToTable("Expense");
+	//        entity.HasOne(d => d.List).WithMany(p => p.BestPriceProducts)
+	//            .HasForeignKey(d => d.ListId)
+	//            .HasConstraintName("FK__BestPrice__ListI__403A8C7D");
+	//    });
 
-    //        entity.Property(e => e.ExpenseId).HasColumnName("ExpenseID");
-    //        entity.Property(e => e.BillId).HasColumnName("BillID");
-    //        entity.Property(e => e.PurchasedId).HasColumnName("PurchasedID");
-    //        entity.Property(e => e.UserId).HasColumnName("UserID");
+	//    modelBuilder.Entity<Expense>(entity =>
+	//    {
+	//        entity.HasKey(e => e.ExpenseId).HasName("PK__Expense__1445CFF3C0E94FB1");
 
-    //        entity.HasOne(d => d.Bill).WithMany(p => p.Expenses)
-    //            .HasForeignKey(d => d.BillId)
-    //            .HasConstraintName("FK__Expense__BillID__4CA06362");
+	//        entity.ToTable("Expense");
 
-    //        entity.HasOne(d => d.Purchased).WithMany(p => p.Expenses)
-    //            .HasForeignKey(d => d.PurchasedId)
-    //            .HasConstraintName("FK__Expense__Purchas__4BAC3F29");
+	//        entity.Property(e => e.ExpenseId).HasColumnName("ExpenseID");
+	//        entity.Property(e => e.BillId).HasColumnName("BillID");
+	//        entity.Property(e => e.PurchasedId).HasColumnName("PurchasedID");
+	//        entity.Property(e => e.UserId).HasColumnName("UserID");
 
-    //        entity.HasOne(d => d.User).WithMany(p => p.Expenses)
-    //            .HasForeignKey(d => d.UserId)
-    //            .HasConstraintName("FK__Expense__UserID__4D94879B");
-    //    });
+	//        entity.HasOne(d => d.Bill).WithMany(p => p.Expenses)
+	//            .HasForeignKey(d => d.BillId)
+	//            .HasConstraintName("FK__Expense__BillID__4CA06362");
 
-    //    modelBuilder.Entity<FinancialGoal>(entity =>
-    //    {
-    //        entity.HasKey(e => e.GoalId).HasName("PK__Financia__8A4FFF31B51EE9B9");
+	//        entity.HasOne(d => d.Purchased).WithMany(p => p.Expenses)
+	//            .HasForeignKey(d => d.PurchasedId)
+	//            .HasConstraintName("FK__Expense__Purchas__4BAC3F29");
 
-    //        entity.ToTable("FinancialGoal");
+	//        entity.HasOne(d => d.User).WithMany(p => p.Expenses)
+	//            .HasForeignKey(d => d.UserId)
+	//            .HasConstraintName("FK__Expense__UserID__4D94879B");
+	//    });
 
-    //        entity.Property(e => e.GoalId).HasColumnName("GoalID");
-    //        entity.Property(e => e.UserId).HasColumnName("UserID");
+	//    modelBuilder.Entity<FinancialGoal>(entity =>
+	//    {
+	//        entity.HasKey(e => e.GoalId).HasName("PK__Financia__8A4FFF31B51EE9B9");
 
-    //        entity.HasOne(d => d.User).WithMany(p => p.FinancialGoals)
-    //            .HasForeignKey(d => d.UserId)
-    //            .HasConstraintName("FK__Financial__UserI__3A81B327");
-    //    });
+	//        entity.ToTable("FinancialGoal");
 
-    //    modelBuilder.Entity<MonthlyBill>(entity =>
-    //    {
-    //        entity.HasKey(e => e.BillId).HasName("PK__MonthlyB__11F2FC4A88D5FB32");
+	//        entity.Property(e => e.GoalId).HasColumnName("GoalID");
+	//        entity.Property(e => e.UserId).HasColumnName("UserID");
 
-    //        entity.ToTable("MonthlyBill");
+	//        entity.HasOne(d => d.User).WithMany(p => p.FinancialGoals)
+	//            .HasForeignKey(d => d.UserId)
+	//            .HasConstraintName("FK__Financial__UserI__3A81B327");
+	//    });
 
-    //        entity.Property(e => e.BillId).HasColumnName("BillID");
-    //        entity.Property(e => e.Category).HasMaxLength(255);
-    //        entity.Property(e => e.Issuer).HasMaxLength(255);
-    //        entity.Property(e => e.Name).HasMaxLength(255);
-    //        entity.Property(e => e.UserId).HasColumnName("UserID");
+	//    modelBuilder.Entity<MonthlyBill>(entity =>
+	//    {
+	//        entity.HasKey(e => e.BillId).HasName("PK__MonthlyB__11F2FC4A88D5FB32");
 
-    //        entity.HasOne(d => d.User).WithMany(p => p.MonthlyBills)
-    //            .HasForeignKey(d => d.UserId)
-    //            .HasConstraintName("FK__MonthlyBi__UserI__45F365D3");
-    //    });
+	//        entity.ToTable("MonthlyBill");
 
-    //    modelBuilder.Entity<PurchasedProduct>(entity =>
-    //    {
-    //        entity.HasKey(e => e.PurchasedId).HasName("PK__Purchase__2B7C245C710664C4");
+	//        entity.Property(e => e.BillId).HasColumnName("BillID");
+	//        entity.Property(e => e.Category).HasMaxLength(255);
+	//        entity.Property(e => e.Issuer).HasMaxLength(255);
+	//        entity.Property(e => e.Name).HasMaxLength(255);
+	//        entity.Property(e => e.UserId).HasColumnName("UserID");
 
-    //        entity.Property(e => e.PurchasedId).HasColumnName("PurchasedID");
-    //        entity.Property(e => e.Category).HasMaxLength(255);
-    //        entity.Property(e => e.ItemName).HasMaxLength(255);
-    //        entity.Property(e => e.ShopName).HasMaxLength(255);
-    //        entity.Property(e => e.UserId).HasColumnName("UserID");
+	//        entity.HasOne(d => d.User).WithMany(p => p.MonthlyBills)
+	//            .HasForeignKey(d => d.UserId)
+	//            .HasConstraintName("FK__MonthlyBi__UserI__45F365D3");
+	//    });
 
-    //        entity.HasOne(d => d.User).WithMany(p => p.PurchasedProducts)
-    //            .HasForeignKey(d => d.UserId)
-    //            .HasConstraintName("FK__Purchased__UserI__48CFD27E");
-    //    });
+	//    modelBuilder.Entity<PurchasedProduct>(entity =>
+	//    {
+	//        entity.HasKey(e => e.PurchasedId).HasName("PK__Purchase__2B7C245C710664C4");
 
-    //    modelBuilder.Entity<ToBuyList>(entity =>
-    //    {
-    //        entity.HasKey(e => e.ListId).HasName("PK__ToBuyLis__E38328651100FCD2");
+	//        entity.Property(e => e.PurchasedId).HasColumnName("PurchasedID");
+	//        entity.Property(e => e.Category).HasMaxLength(255);
+	//        entity.Property(e => e.ItemName).HasMaxLength(255);
+	//        entity.Property(e => e.ShopName).HasMaxLength(255);
+	//        entity.Property(e => e.UserId).HasColumnName("UserID");
 
-    //        entity.ToTable("ToBuyList");
+	//        entity.HasOne(d => d.User).WithMany(p => p.PurchasedProducts)
+	//            .HasForeignKey(d => d.UserId)
+	//            .HasConstraintName("FK__Purchased__UserI__48CFD27E");
+	//    });
 
-    //        entity.Property(e => e.ListId).HasColumnName("ListID");
-    //        entity.Property(e => e.Date).HasColumnType("datetime");
-    //        entity.Property(e => e.ProductName).HasMaxLength(255);
-    //        entity.Property(e => e.UserId).HasColumnName("UserID");
+	//    modelBuilder.Entity<ToBuyList>(entity =>
+	//    {
+	//        entity.HasKey(e => e.ListId).HasName("PK__ToBuyLis__E38328651100FCD2");
 
-    //        entity.HasOne(d => d.User).WithMany(p => p.ToBuyLists)
-    //            .HasForeignKey(d => d.UserId)
-    //            .HasConstraintName("FK__ToBuyList__UserI__3D5E1FD2");
-    //    });
+	//        entity.ToTable("ToBuyList");
 
-    //    modelBuilder.Entity<User>(entity =>
-    //    {
-    //        entity.HasKey(e => e.UserId).HasName("PK__User__1788CCAC89F71645");
+	//        entity.Property(e => e.ListId).HasColumnName("ListID");
+	//        entity.Property(e => e.Date).HasColumnType("datetime");
+	//        entity.Property(e => e.ProductName).HasMaxLength(255);
+	//        entity.Property(e => e.UserId).HasColumnName("UserID");
 
-    //        entity.ToTable("User");
+	//        entity.HasOne(d => d.User).WithMany(p => p.ToBuyLists)
+	//            .HasForeignKey(d => d.UserId)
+	//            .HasConstraintName("FK__ToBuyList__UserI__3D5E1FD2");
+	//    });
 
-    //        entity.HasIndex(e => e.Email, "UQ__User__A9D10534CFA727C6").IsUnique();
+	//    modelBuilder.Entity<User>(entity =>
+	//    {
+	//        entity.HasKey(e => e.UserId).HasName("PK__User__1788CCAC89F71645");
 
-    //        entity.Property(e => e.UserId).HasColumnName("UserID");
-    //        entity.Property(e => e.Email).HasMaxLength(255);
-    //        entity.Property(e => e.Name).HasMaxLength(255);
-    //        entity.Property(e => e.Password).HasMaxLength(255);
-    //    });
+	//        entity.ToTable("User");
 
-    //    OnModelCreatingPartial(modelBuilder);
-    //}
+	//        entity.HasIndex(e => e.Email, "UQ__User__A9D10534CFA727C6").IsUnique();
 
-    //partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+	//        entity.Property(e => e.UserId).HasColumnName("UserID");
+	//        entity.Property(e => e.Email).HasMaxLength(255);
+	//        entity.Property(e => e.Name).HasMaxLength(255);
+	//        entity.Property(e => e.Password).HasMaxLength(255);
+	//    });
+
+	//    OnModelCreatingPartial(modelBuilder);
+	//}
+
+	//partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

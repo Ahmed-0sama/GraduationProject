@@ -1,11 +1,14 @@
 ﻿using Google.Apis.Drive.v3.Data;
 using gp.Models;
 using Graduation_Project.DTO;
+using Graduation_Project.Models;
+using Graduation_Project.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using User = gp.Models.User;
@@ -18,10 +21,12 @@ namespace Graduation_Project.Controllers
 	{
 		private readonly UserManager<User> userManager;
 		private readonly AppDbContext db;
-		public ToBuyListController(UserManager<User> userManager, AppDbContext db)
+		private readonly AmazonScrappingService amazon;
+		public ToBuyListController(UserManager<User> userManager, AppDbContext db,AmazonScrappingService amazon)
 		{
 			this.userManager = userManager;
 			this.db = db;
+			this.amazon = amazon;
 		}
 		[HttpPost("AddToBuyList")]
 		[Authorize]
@@ -34,15 +39,54 @@ namespace Graduation_Project.Controllers
 				{
 					return NotFound("User not found");
 				}
-				ToBuyList toBuyList = new ToBuyList
+				using var transaction = await db.Database.BeginTransactionAsync();
+				try
 				{
-					UserId = user.Id,
-					ProductName = dto.ProductName,
-					Date = DateTime.Now
-				};
-				db.ToBuyLists.Add(toBuyList);
-				db.SaveChanges();
-				return Ok("Item Saved");
+					var existingList = db.ToBuyLists
+					.FirstOrDefault(l => l.ProductName == dto.ProductName);
+					if (existingList == null)
+					{
+						ToBuyList toBuyList = new ToBuyList
+						{
+							ProductName = dto.ProductName,
+						};
+						db.ToBuyLists.Add(toBuyList);
+						db.SaveChanges();
+						await amazon.StartScraping(dto.ProductName, toBuyList.ListId);
+						UserToBuyList userlist = new UserToBuyList
+						{
+							UserId = user.Id,
+							ToBuyListId = toBuyList.ListId
+						};
+						db.UserToBuyLists.Add(userlist);
+						db.SaveChanges();
+						return Ok("Item Saved");
+					}
+					else
+					{
+						var isAlreadyPresent = db.UserToBuyLists
+						.Any(ul => ul.UserId == user.Id && ul.ToBuyListId == existingList.ListId);
+						if (isAlreadyPresent)
+						{
+							return Ok("Item already Present");
+						}
+						var userlist = new UserToBuyList
+						{
+							UserId = user.Id,
+							ToBuyListId = existingList.ListId
+						};
+						await db.UserToBuyLists.AddAsync(userlist);
+						await db.SaveChangesAsync();
+						await transaction.CommitAsync(); // Commit transaction
+						return Ok("Item Saved");
+					}
+				}
+				catch
+				{
+					await transaction.RollbackAsync(); // Rollback on error
+					return StatusCode(500, "An error occurred while saving the item.");
+				}
+
 			}
 			return BadRequest(ModelState);
 		}
@@ -55,7 +99,10 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("User not found");
 			}
-			List<ToBuyList> list = db.ToBuyLists.Where(x => x.UserId == user.Id).ToList();
+			var list = await db.ToBuyLists
+	.Where(tl => db.UserToBuyLists.Any(ut => ut.UserId == user.Id && ut.ToBuyListId == tl.ListId))
+	.ToListAsync();
+
 			List<ToBuyListReceive> dto = new List<ToBuyListReceive>();
 			foreach (var item in list)
 			{
@@ -63,11 +110,9 @@ namespace Graduation_Project.Controllers
 				{
 					id = item.ListId,
 					ProductName = item.ProductName,
-					Date = (DateTime)item.Date
 				});
 			}
 			return Ok(dto);
-
 		}
 		[Authorize]
 		[HttpDelete("DeleteFromToBuyList")]

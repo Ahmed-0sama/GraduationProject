@@ -10,7 +10,7 @@ public partial class BestPriceProduct
 {
     [Key]
 	public int ItemId { get; set; }
-	public int ListId { get; set; }
+	
 
     public string? Category { get; set; }
 
@@ -29,8 +29,9 @@ public partial class BestPriceProduct
     public string? ProductName { get; set; }
 
     public bool? IsBought { get; set; }
-
-	[ForeignKey("ListId")]
-	public virtual ToBuyList List { get; set; }
-	public virtual List<ProductPriceHistory> PriceHistory { get; set; } = new();
+    [ForeignKey("ListId")]
+	public int ToBuyListID { get; set; }
+    public virtual ToBuyList ToBuyList { get; set; }
+    public virtual List<ProductPriceHistory> PriceHistory { get; set; } = new();
+	public PurchasedProduct PurchasedProduct { get; set; }
 }

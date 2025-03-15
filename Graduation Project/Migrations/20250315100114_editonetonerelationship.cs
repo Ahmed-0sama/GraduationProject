@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Graduation_Project.Migrations
 {
     /// <inheritdoc />
-    public partial class update : Migration
+    public partial class editonetonerelationship : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -30,7 +30,6 @@ namespace Graduation_Project.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    UserId = table.Column<int>(type: "int", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     lastName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Photo = table.Column<byte[]>(type: "varbinary(max)", nullable: true),
@@ -53,6 +52,19 @@ namespace Graduation_Project.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ToBuyLists",
+                columns: table => new
+                {
+                    ListId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ProductName = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ToBuyLists", x => x.ListId);
                 });
 
             migrationBuilder.CreateTable(
@@ -82,18 +94,17 @@ namespace Graduation_Project.Migrations
                 {
                     AlertId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     Message = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DateTime = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Type = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserId1 = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    Type = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Alerts", x => x.AlertId);
                     table.ForeignKey(
-                        name: "FK_Alerts_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
+                        name: "FK_Alerts_AspNetUsers_UserId",
+                        column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
                 });
@@ -231,50 +242,108 @@ namespace Graduation_Project.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "BestPriceProducts",
+                columns: table => new
+                {
+                    ItemId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Category = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Image = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CurrentDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    CurrentPrice = table.Column<double>(type: "float", nullable: false),
+                    Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    ShopName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ProductName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsBought = table.Column<bool>(type: "bit", nullable: true),
+                    ToBuyListID = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BestPriceProducts", x => x.ItemId);
+                    table.ForeignKey(
+                        name: "FK_BestPriceProducts_ToBuyLists_ToBuyListID",
+                        column: x => x.ToBuyListID,
+                        principalTable: "ToBuyLists",
+                        principalColumn: "ListId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserToBuyLists",
+                columns: table => new
+                {
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ToBuyListId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserToBuyLists", x => new { x.UserId, x.ToBuyListId });
+                    table.ForeignKey(
+                        name: "FK_UserToBuyLists_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserToBuyLists_ToBuyLists_ToBuyListId",
+                        column: x => x.ToBuyListId,
+                        principalTable: "ToBuyLists",
+                        principalColumn: "ListId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductPriceHistories",
+                columns: table => new
+                {
+                    PriceID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ItemId = table.Column<int>(type: "int", nullable: false),
+                    Price = table.Column<double>(type: "float", nullable: false),
+                    DateRecorded = table.Column<DateOnly>(type: "date", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductPriceHistories", x => x.PriceID);
+                    table.ForeignKey(
+                        name: "FK_ProductPriceHistories_BestPriceProducts_ItemId",
+                        column: x => x.ItemId,
+                        principalTable: "BestPriceProducts",
+                        principalColumn: "ItemId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PurchasedProducts",
                 columns: table => new
                 {
-                    PurchasedId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    Category = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Date = table.Column<DateOnly>(type: "date", nullable: true),
-                    Price = table.Column<double>(type: "float", nullable: true),
-                    Quantity = table.Column<int>(type: "int", nullable: true),
-                    ShopName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ItemName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PurchasedId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Date = table.Column<DateOnly>(type: "date", nullable: false),
+                    Price = table.Column<double>(type: "float", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    ShopName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ItemName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ReceiptImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserId1 = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    bestpriceproductId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_PurchasedProducts", x => x.PurchasedId);
                     table.ForeignKey(
-                        name: "FK_PurchasedProducts_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
+                        name: "FK_PurchasedProducts_AspNetUsers_UserId",
+                        column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ToBuyLists",
-                columns: table => new
-                {
-                    ListId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    ProductName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Date = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UserId1 = table.Column<string>(type: "nvarchar(450)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ToBuyLists", x => x.ListId);
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ToBuyLists_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        name: "FK_PurchasedProducts_BestPriceProducts_PurchasedId",
+                        column: x => x.PurchasedId,
+                        principalTable: "BestPriceProducts",
+                        principalColumn: "ItemId",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -308,37 +377,10 @@ namespace Graduation_Project.Migrations
                         principalColumn: "PurchasedId");
                 });
 
-            migrationBuilder.CreateTable(
-                name: "BestPriceProducts",
-                columns: table => new
-                {
-                    ItemId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ListId = table.Column<int>(type: "int", nullable: true),
-                    Category = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Image = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Date = table.Column<DateOnly>(type: "date", nullable: true),
-                    Price = table.Column<double>(type: "float", nullable: true),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Quantity = table.Column<int>(type: "int", nullable: true),
-                    ShopName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ProductName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsBought = table.Column<bool>(type: "bit", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_BestPriceProducts", x => x.ItemId);
-                    table.ForeignKey(
-                        name: "FK_BestPriceProducts_ToBuyLists_ListId",
-                        column: x => x.ListId,
-                        principalTable: "ToBuyLists",
-                        principalColumn: "ListId");
-                });
-
             migrationBuilder.CreateIndex(
-                name: "IX_Alerts_UserId1",
+                name: "IX_Alerts_UserId",
                 table: "Alerts",
-                column: "UserId1");
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -380,9 +422,9 @@ namespace Graduation_Project.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BestPriceProducts_ListId",
+                name: "IX_BestPriceProducts_ToBuyListID",
                 table: "BestPriceProducts",
-                column: "ListId");
+                column: "ToBuyListID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Expenses_BillId",
@@ -410,14 +452,24 @@ namespace Graduation_Project.Migrations
                 column: "UserId1");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PurchasedProducts_UserId1",
-                table: "PurchasedProducts",
-                column: "UserId1");
+                name: "IX_ProductPriceHistories_ItemId",
+                table: "ProductPriceHistories",
+                column: "ItemId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ToBuyLists_UserId1",
+                name: "IX_PurchasedProducts_UserId",
+                table: "PurchasedProducts",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ToBuyList_ProductName",
                 table: "ToBuyLists",
-                column: "UserId1");
+                column: "ProductName");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserToBuyLists_ToBuyListId",
+                table: "UserToBuyLists",
+                column: "ToBuyListId");
         }
 
         /// <inheritdoc />
@@ -442,19 +494,19 @@ namespace Graduation_Project.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "BestPriceProducts");
-
-            migrationBuilder.DropTable(
                 name: "Expenses");
 
             migrationBuilder.DropTable(
                 name: "FinancialGoals");
 
             migrationBuilder.DropTable(
-                name: "AspNetRoles");
+                name: "ProductPriceHistories");
 
             migrationBuilder.DropTable(
-                name: "ToBuyLists");
+                name: "UserToBuyLists");
+
+            migrationBuilder.DropTable(
+                name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "MonthlyBills");
@@ -464,6 +516,12 @@ namespace Graduation_Project.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "BestPriceProducts");
+
+            migrationBuilder.DropTable(
+                name: "ToBuyLists");
         }
     }
 }

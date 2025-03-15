@@ -12,8 +12,8 @@ using gp.Models;
 namespace Graduation_Project.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250206205615_update")]
-    partial class update
+    [Migration("20250315100114_editonetonerelationship")]
+    partial class editonetonerelationship
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,45 @@ namespace Graduation_Project.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Graduation_Project.Models.ProductPriceHistory", b =>
+                {
+                    b.Property<int>("PriceID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PriceID"));
+
+                    b.Property<DateOnly?>("DateRecorded")
+                        .HasColumnType("date");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("float");
+
+                    b.HasKey("PriceID");
+
+                    b.HasIndex("ItemId");
+
+                    b.ToTable("ProductPriceHistories");
+                });
+
+            modelBuilder.Entity("Graduation_Project.Models.UserToBuyList", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ToBuyListId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "ToBuyListId");
+
+                    b.HasIndex("ToBuyListId");
+
+                    b.ToTable("UserToBuyLists");
+                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -175,15 +214,12 @@ namespace Graduation_Project.Migrations
                     b.Property<string>("Type")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId1")
+                    b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("AlertId");
 
-                    b.HasIndex("UserId1");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Alerts");
                 });
@@ -199,8 +235,11 @@ namespace Graduation_Project.Migrations
                     b.Property<string>("Category")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateOnly?>("Date")
+                    b.Property<DateOnly?>("CurrentDate")
                         .HasColumnType("date");
+
+                    b.Property<double>("CurrentPrice")
+                        .HasColumnType("float");
 
                     b.Property<string>("Image")
                         .HasColumnType("nvarchar(max)");
@@ -208,27 +247,24 @@ namespace Graduation_Project.Migrations
                     b.Property<bool?>("IsBought")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("ListId")
-                        .HasColumnType("int");
-
-                    b.Property<double?>("Price")
-                        .HasColumnType("float");
-
                     b.Property<string>("ProductName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("Quantity")
+                    b.Property<int>("Quantity")
                         .HasColumnType("int");
 
                     b.Property<string>("ShopName")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ToBuyListID")
+                        .HasColumnType("int");
 
                     b.Property<string>("Url")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ItemId");
 
-                    b.HasIndex("ListId");
+                    b.HasIndex("ToBuyListID");
 
                     b.ToTable("BestPriceProducts");
                 });
@@ -336,41 +372,42 @@ namespace Graduation_Project.Migrations
             modelBuilder.Entity("gp.Models.PurchasedProduct", b =>
                 {
                     b.Property<int>("PurchasedId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PurchasedId"));
-
                     b.Property<string>("Category")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateOnly?>("Date")
+                    b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
                     b.Property<string>("ItemName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double?>("Price")
+                    b.Property<double>("Price")
                         .HasColumnType("float");
 
-                    b.Property<int?>("Quantity")
+                    b.Property<int>("Quantity")
                         .HasColumnType("int");
 
                     b.Property<string>("ReceiptImage")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ShopName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId1")
+                    b.Property<string>("UserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("bestpriceproductId")
+                        .HasColumnType("int");
 
                     b.HasKey("PurchasedId");
 
-                    b.HasIndex("UserId1");
+                    b.HasIndex("UserId");
 
                     b.ToTable("PurchasedProducts");
                 });
@@ -383,21 +420,14 @@ namespace Graduation_Project.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ListId"));
 
-                    b.Property<DateTime?>("Date")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("ProductName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId1")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("ListId");
 
-                    b.HasIndex("UserId1");
+                    b.HasIndex("ProductName")
+                        .HasDatabaseName("IX_ToBuyList_ProductName");
 
                     b.ToTable("ToBuyLists");
                 });
@@ -459,9 +489,6 @@ namespace Graduation_Project.Migrations
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -480,6 +507,36 @@ namespace Graduation_Project.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Graduation_Project.Models.ProductPriceHistory", b =>
+                {
+                    b.HasOne("gp.Models.BestPriceProduct", "Product")
+                        .WithMany("PriceHistory")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Graduation_Project.Models.UserToBuyList", b =>
+                {
+                    b.HasOne("gp.Models.ToBuyList", "ToBuyList")
+                        .WithMany("UserToBuyLists")
+                        .HasForeignKey("ToBuyListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("gp.Models.User", "User")
+                        .WithMany("UserToBuyLists")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ToBuyList");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -537,18 +594,20 @@ namespace Graduation_Project.Migrations
                 {
                     b.HasOne("gp.Models.User", "User")
                         .WithMany("Alerts")
-                        .HasForeignKey("UserId1");
+                        .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("gp.Models.BestPriceProduct", b =>
                 {
-                    b.HasOne("gp.Models.ToBuyList", "List")
+                    b.HasOne("gp.Models.ToBuyList", "ToBuyList")
                         .WithMany("BestPriceProducts")
-                        .HasForeignKey("ListId");
+                        .HasForeignKey("ToBuyListID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("List");
+                    b.Navigation("ToBuyList");
                 });
 
             modelBuilder.Entity("gp.Models.Expense", b =>
@@ -592,20 +651,29 @@ namespace Graduation_Project.Migrations
 
             modelBuilder.Entity("gp.Models.PurchasedProduct", b =>
                 {
+                    b.HasOne("gp.Models.BestPriceProduct", "bestPriceProduct")
+                        .WithOne("PurchasedProduct")
+                        .HasForeignKey("gp.Models.PurchasedProduct", "PurchasedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("gp.Models.User", "User")
                         .WithMany("PurchasedProducts")
-                        .HasForeignKey("UserId1");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
+
+                    b.Navigation("bestPriceProduct");
                 });
 
-            modelBuilder.Entity("gp.Models.ToBuyList", b =>
+            modelBuilder.Entity("gp.Models.BestPriceProduct", b =>
                 {
-                    b.HasOne("gp.Models.User", "User")
-                        .WithMany("ToBuyLists")
-                        .HasForeignKey("UserId1");
+                    b.Navigation("PriceHistory");
 
-                    b.Navigation("User");
+                    b.Navigation("PurchasedProduct")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("gp.Models.MonthlyBill", b =>
@@ -621,6 +689,8 @@ namespace Graduation_Project.Migrations
             modelBuilder.Entity("gp.Models.ToBuyList", b =>
                 {
                     b.Navigation("BestPriceProducts");
+
+                    b.Navigation("UserToBuyLists");
                 });
 
             modelBuilder.Entity("gp.Models.User", b =>
@@ -635,7 +705,7 @@ namespace Graduation_Project.Migrations
 
                     b.Navigation("PurchasedProducts");
 
-                    b.Navigation("ToBuyLists");
+                    b.Navigation("UserToBuyLists");
                 });
 #pragma warning restore 612, 618
         }

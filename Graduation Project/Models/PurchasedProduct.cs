@@ -26,6 +26,7 @@ public partial class PurchasedProduct
     public string? ReceiptImage { get; set; }
 
     public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
-
-    public virtual User? User { get; set; }
+    public int bestpriceproductId { get; set; }
+	public virtual BestPriceProduct bestPriceProduct { get; set; }
+	public virtual User? User { get; set; }
 }

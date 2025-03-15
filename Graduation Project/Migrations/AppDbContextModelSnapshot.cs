@@ -46,6 +46,21 @@ namespace Graduation_Project.Migrations
                     b.ToTable("ProductPriceHistories");
                 });
 
+            modelBuilder.Entity("Graduation_Project.Models.UserToBuyList", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ToBuyListId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "ToBuyListId");
+
+                    b.HasIndex("ToBuyListId");
+
+                    b.ToTable("UserToBuyLists");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -229,9 +244,6 @@ namespace Graduation_Project.Migrations
                     b.Property<bool?>("IsBought")
                         .HasColumnType("bit");
 
-                    b.Property<int>("ListId")
-                        .HasColumnType("int");
-
                     b.Property<string>("ProductName")
                         .HasColumnType("nvarchar(max)");
 
@@ -241,12 +253,15 @@ namespace Graduation_Project.Migrations
                     b.Property<string>("ShopName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("ToBuyListID")
+                        .HasColumnType("int");
+
                     b.Property<string>("Url")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ItemId");
 
-                    b.HasIndex("ListId");
+                    b.HasIndex("ToBuyListID");
 
                     b.ToTable("BestPriceProducts");
                 });
@@ -354,10 +369,7 @@ namespace Graduation_Project.Migrations
             modelBuilder.Entity("gp.Models.PurchasedProduct", b =>
                 {
                     b.Property<int>("PurchasedId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PurchasedId"));
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -387,6 +399,9 @@ namespace Graduation_Project.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<int>("bestpriceproductId")
+                        .HasColumnType("int");
+
                     b.HasKey("PurchasedId");
 
                     b.HasIndex("UserId");
@@ -402,19 +417,14 @@ namespace Graduation_Project.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ListId"));
 
-                    b.Property<DateTime?>("Date")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("ProductName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("ListId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ProductName")
+                        .HasDatabaseName("IX_ToBuyList_ProductName");
 
                     b.ToTable("ToBuyLists");
                 });
@@ -507,6 +517,25 @@ namespace Graduation_Project.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Graduation_Project.Models.UserToBuyList", b =>
+                {
+                    b.HasOne("gp.Models.ToBuyList", "ToBuyList")
+                        .WithMany("UserToBuyLists")
+                        .HasForeignKey("ToBuyListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("gp.Models.User", "User")
+                        .WithMany("UserToBuyLists")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ToBuyList");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -569,13 +598,13 @@ namespace Graduation_Project.Migrations
 
             modelBuilder.Entity("gp.Models.BestPriceProduct", b =>
                 {
-                    b.HasOne("gp.Models.ToBuyList", "List")
+                    b.HasOne("gp.Models.ToBuyList", "ToBuyList")
                         .WithMany("BestPriceProducts")
-                        .HasForeignKey("ListId")
+                        .HasForeignKey("ToBuyListID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("List");
+                    b.Navigation("ToBuyList");
                 });
 
             modelBuilder.Entity("gp.Models.Expense", b =>
@@ -619,6 +648,12 @@ namespace Graduation_Project.Migrations
 
             modelBuilder.Entity("gp.Models.PurchasedProduct", b =>
                 {
+                    b.HasOne("gp.Models.BestPriceProduct", "bestPriceProduct")
+                        .WithOne("PurchasedProduct")
+                        .HasForeignKey("gp.Models.PurchasedProduct", "PurchasedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("gp.Models.User", "User")
                         .WithMany("PurchasedProducts")
                         .HasForeignKey("UserId")
@@ -626,22 +661,16 @@ namespace Graduation_Project.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
 
-            modelBuilder.Entity("gp.Models.ToBuyList", b =>
-                {
-                    b.HasOne("gp.Models.User", "User")
-                        .WithMany("ToBuyLists")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
+                    b.Navigation("bestPriceProduct");
                 });
 
             modelBuilder.Entity("gp.Models.BestPriceProduct", b =>
                 {
                     b.Navigation("PriceHistory");
+
+                    b.Navigation("PurchasedProduct")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("gp.Models.MonthlyBill", b =>
@@ -657,6 +686,8 @@ namespace Graduation_Project.Migrations
             modelBuilder.Entity("gp.Models.ToBuyList", b =>
                 {
                     b.Navigation("BestPriceProducts");
+
+                    b.Navigation("UserToBuyLists");
                 });
 
             modelBuilder.Entity("gp.Models.User", b =>
@@ -671,7 +702,7 @@ namespace Graduation_Project.Migrations
 
                     b.Navigation("PurchasedProducts");
 
-                    b.Navigation("ToBuyLists");
+                    b.Navigation("UserToBuyLists");
                 });
 #pragma warning restore 612, 618
         }
