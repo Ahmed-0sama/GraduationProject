@@ -22,11 +22,15 @@ namespace Graduation_Project.Controllers
 		private readonly UserManager<User> userManager;
 		private readonly AppDbContext db;
 		private readonly AmazonScrappingService amazon;
-		public ToBuyListController(UserManager<User> userManager, AppDbContext db,AmazonScrappingService amazon)
+		private readonly NoonScrappingService noon;
+		private readonly JumiaScrappingService jumia;
+		public ToBuyListController(UserManager<User> userManager, AppDbContext db,AmazonScrappingService amazon,NoonScrappingService noon,JumiaScrappingService jumia)
 		{
 			this.userManager = userManager;
 			this.db = db;
 			this.amazon = amazon;
+			this.noon = noon;
+			this.jumia = jumia;
 		}
 		[HttpPost("AddToBuyList")]
 		[Authorize]
@@ -50,17 +54,17 @@ namespace Graduation_Project.Controllers
 						{
 							ProductName = dto.ProductName,
 						};
-						db.ToBuyLists.Add(toBuyList);
-						db.SaveChanges();
+						await db.ToBuyLists.AddAsync(toBuyList);
+						await db.SaveChangesAsync();
 						await amazon.StartScraping(dto.ProductName, toBuyList.ListId);
+						await noon.StartScraping(dto.ProductName, toBuyList.ListId);
+						await jumia.StartScraping(dto.ProductName, toBuyList.ListId);
 						UserToBuyList userlist = new UserToBuyList
 						{
 							UserId = user.Id,
 							ToBuyListId = toBuyList.ListId
 						};
-						db.UserToBuyLists.Add(userlist);
-						db.SaveChanges();
-						return Ok("Item Saved");
+						await db.UserToBuyLists.AddAsync(userlist);
 					}
 					else
 					{
@@ -76,17 +80,17 @@ namespace Graduation_Project.Controllers
 							ToBuyListId = existingList.ListId
 						};
 						await db.UserToBuyLists.AddAsync(userlist);
+					}
 						await db.SaveChangesAsync();
 						await transaction.CommitAsync(); // Commit transaction
 						return Ok("Item Saved");
-					}
+					
 				}
 				catch
 				{
 					await transaction.RollbackAsync(); // Rollback on error
 					return StatusCode(500, "An error occurred while saving the item.");
 				}
-
 			}
 			return BadRequest(ModelState);
 		}

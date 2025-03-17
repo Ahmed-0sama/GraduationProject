@@ -161,7 +161,7 @@ namespace Graduation_Project.Controllers
 			{
 				return BadRequest("Product already marked as purchased");
 			}
-			product.IsBought = true;
+			//product.IsBought = true;
 
 			PurchasedProduct purchasedProduct = new PurchasedProduct
 			{

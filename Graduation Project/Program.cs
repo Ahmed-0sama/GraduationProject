@@ -17,6 +17,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<AmazonScrappingService>();
+builder.Services.AddScoped<NoonScrappingService>();
+builder.Services.AddScoped<JumiaScrappingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddIdentity<User, IdentityRole>()
