@@ -19,5 +19,6 @@
 		public string? ProductName { get; set; }
 
 		public bool? IsBought { get; set; }
+		public List<PriceHistoryDTO> PriceHistory { get; set; } = new List<PriceHistoryDTO>();
 	}
 }

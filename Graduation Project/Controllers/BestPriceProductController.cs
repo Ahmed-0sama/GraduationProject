@@ -2,6 +2,7 @@
 using Graduation_Project.DTO;
 
 using Graduation_Project.Models;
+using Graduation_Project.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -21,8 +22,10 @@ namespace Graduation_Project.Controllers
 	{
 		UserManager<User> userManager;
 		AppDbContext db;
-		public BestPriceProductController(UserManager<User> userManager, AppDbContext db)
+		private readonly EveryDayPriceCheackService _priceCheckService;
+		public BestPriceProductController(UserManager<User> userManager, AppDbContext db, EveryDayPriceCheackService priceCheckService)
 		{
+			_priceCheckService = priceCheckService;
 			this.userManager = userManager;
 			this.db = db;
 		}
@@ -73,14 +76,22 @@ namespace Graduation_Project.Controllers
 		{
 			if (id == null)
 			{
-				return BadRequest("List id is required");
+				return BadRequest("id is required");
 			}
-			var list = db.ToBuyLists.Where(x => x.ListId == id).FirstOrDefault();
-			if (list == null)
+			var product = await db.BestPriceProducts.Where(x => x.ItemId == id).FirstOrDefaultAsync();
+			if (product == null)
 			{
-				return NotFound("List not found");
+				return NotFound("item not found");
 			}
-			BestPriceProduct product = db.BestPriceProducts.FirstOrDefault(x => x.ToBuyListID == id);
+			var priceHistory = await db.ProductPriceHistories
+		.Where(ph => ph.ItemId == id)
+		.OrderByDescending(ph => ph.DateRecorded) // Show most recent prices first
+		.Select(ph => new PriceHistoryDTO
+		{
+			Price = ph.Price,
+			DateRecorded = (DateOnly)ph.DateRecorded // Convert DateOnly to DateTime
+		})
+		.ToListAsync();
 			List<getitemPriceDetailsDTO> productsdto = new List<getitemPriceDetailsDTO>();
 			productsdto.Add(new getitemPriceDetailsDTO
 			{
@@ -130,6 +141,7 @@ namespace Graduation_Project.Controllers
 			}
 			List<getItemPriceDTO> productdto = products.Select(item => new getItemPriceDTO
 			{
+				id = item.ItemId,
 				ProductName = item.ProductName,
 				Price = item.CurrentPrice,
 				ShopName = item.ShopName,
@@ -203,5 +215,16 @@ namespace Graduation_Project.Controllers
 			return Ok(priceHistoriesdto);
 		}
 
+		[HttpGet("test-price-check/{itemId}")]
+		public async Task<IActionResult> TestPriceCheck(int itemId)
+		{
+			var product = await db.BestPriceProducts.FindAsync(itemId);
+			if (product == null)
+				return NotFound("❌ Product not found!");
+
+			string newPrice = _priceCheckService.RunPythonScript(product.Url) ?? "Error retrieving price";
+
+			return Ok(new { ItemId = product.ItemId, OldPrice = product.CurrentPrice, NewPrice = newPrice });
+		}
 	}
 }

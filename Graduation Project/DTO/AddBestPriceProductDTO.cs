@@ -9,7 +9,7 @@
 		public string url { get; set; }
 		public string image { get; set; }
 		public int quantity { get; set; }
-		public DateOnly date { get; set; }
+		public DateOnly? date { get; set; }
 
 	}
 }

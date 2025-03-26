@@ -8,7 +8,7 @@ namespace gp.Models;
 
 public partial class BestPriceProduct
 {
-    [Key]
+	[Key]
 	public int ItemId { get; set; }
 	
 
