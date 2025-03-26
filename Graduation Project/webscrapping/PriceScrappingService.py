@@ -1,5 +1,6 @@
 ﻿import sys
 import json
+import re  # FIX: Import regex module
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -20,6 +21,13 @@ def setup_driver():
     service = Service(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=options)
 
+def clean_price(price_text):
+    """Extracts only the numeric price and ensures it's valid."""
+    numeric_price = re.sub(r"[^\d.]", "", price_text)  # Keep only numbers and dots
+    if numeric_price.count(".") > 1:
+        numeric_price = numeric_price.replace(".", "", numeric_price.count(".") - 1)  # Remove extra dots
+    return numeric_price if numeric_price else "0"  # Ensure no empty string
+
 def fetch_amazon_price(driver):
     try:
         driver.add_cookie({"name": "lc-main", "value": "en_US"})
@@ -28,7 +36,8 @@ def fetch_amazon_price(driver):
         name_element = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".a-price-whole"))
         )
-        return name_element.text
+        price_text = name_element.text.strip()
+        return clean_price(price_text)  # FIX: Clean the extracted price
     except Exception as e:
         return f"Amazon price not found: {e}"
 
@@ -49,7 +58,8 @@ def fetch_jumia_price(driver):
         name_element = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".-b.-ubpt.-tal.-fs24.-prxs"))
         )
-        return name_element.text
+        price_text = name_element.text.strip()
+        return clean_price(price_text)
     except Exception as e:
         return f"Jumia price not found: {e}"
 
@@ -59,8 +69,7 @@ def fetch_noon_price(driver):
             EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'priceNow') or contains(@class, 'sellingPrice')]"))
         )
         price_text = name_element.text.strip()
-        numeric_price = re.sub(r"[^\d.]", "", price_text)
-        return numeric_price
+        return clean_price(price_text)
     except Exception as e:
         return f"Noon price not found: {e}"
 
@@ -75,19 +84,19 @@ def main():
     try:
         driver.get(url)
         url_lower = url.lower()
-        results = {}
+        price = ""
 
         if url_lower.startswith("https://www.amazon"):
-            results["Amazon"] = fetch_amazon_price(driver)
+            price = fetch_amazon_price(driver)
         elif url_lower.startswith("https://www.jumia"):
-            results["Jumia"] = fetch_jumia_price(driver)
+            price = fetch_jumia_price(driver)
         elif url_lower.startswith("https://www.noon"):
-            results["Noon"] = fetch_noon_price(driver)
+            price = fetch_noon_price(driver)
         else:
             print("Error: Unsupported website")
             sys.exit(1)
 
-        json_output = json.dumps(results, indent=4)
+        json_output = json.dumps({"price": price}, indent=4)
         print(json_output)
     finally:
         driver.quit()

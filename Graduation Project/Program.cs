@@ -21,7 +21,7 @@ builder.Services.AddScoped<NoonScrappingService>();
 builder.Services.AddScoped<JumiaScrappingService>();
 builder.Services.AddScoped<EveryDayPriceCheackService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-
+builder.Services.AddHostedService<PriceCheckBackgroundService>();
 builder.Services.AddIdentity<User, IdentityRole>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
@@ -70,21 +70,21 @@ builder.Services.AddSwaggerGen(options =>
 		}
 	});
 });
-var scopeFactory = builder.Services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
-Task.Run(async () =>
-{
-	while (true)
-	{
-		using (var scope = scopeFactory.CreateScope())
-		{
-			var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
-			await priceCheckService.checkandupdate();
-		}
+//var scopeFactory = builder.Services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+//Task.Run(async () =>
+//{
+//	while (true)
+//	{
+//		using (var scope = scopeFactory.CreateScope())
+//		{
+//			var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
+//			await priceCheckService.checkandupdate();
+//		}
 
-		Console.WriteLine("Price check completed. Waiting for next run...");
-		await Task.Delay(TimeSpan.FromHours(24)); // Runs every 24 hours
-	}
-});
+//		Console.WriteLine("Price check completed. Waiting for next run...");
+//		await Task.Delay(TimeSpan.FromHours(24)); // Runs every 24 hours
+//	}
+//});
 var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

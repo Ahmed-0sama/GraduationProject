@@ -3,6 +3,6 @@
 	public class PriceHistoryDTO
 	{
 		public double Price { get; set; }
-		public DateOnly DateRecorded { get; set; }
+		public DateOnly? DateRecorded { get; set; }
 	}
 }

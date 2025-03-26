@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Security.Claims;
@@ -78,22 +79,22 @@ namespace Graduation_Project.Controllers
 			{
 				return BadRequest("id is required");
 			}
-			var product = await db.BestPriceProducts.Where(x => x.ItemId == id).FirstOrDefaultAsync();
+			var product = await db.BestPriceProducts
+			.Include(p => p.PriceHistory) 
+			.FirstOrDefaultAsync(x => x.ItemId == id);
 			if (product == null)
 			{
 				return NotFound("item not found");
 			}
-			var priceHistory = await db.ProductPriceHistories
-		.Where(ph => ph.ItemId == id)
-		.OrderByDescending(ph => ph.DateRecorded) // Show most recent prices first
+			var priceHistoryList = product.PriceHistory
+		.OrderByDescending(ph => ph.DateRecorded)
 		.Select(ph => new PriceHistoryDTO
 		{
-			Price = ph.Price,
-			DateRecorded = (DateOnly)ph.DateRecorded // Convert DateOnly to DateTime
+		Price = ph.Price,
+		DateRecorded =ph.DateRecorded 
 		})
-		.ToListAsync();
-			List<getitemPriceDetailsDTO> productsdto = new List<getitemPriceDetailsDTO>();
-			productsdto.Add(new getitemPriceDetailsDTO
+		.ToList();
+			var productDto = new getitemPriceDetailsDTO
 			{
 				ProductName = product.ProductName,
 				Price = product.CurrentPrice,
@@ -101,12 +102,13 @@ namespace Graduation_Project.Controllers
 				Quantity = product.Quantity,
 				Image = product.Image,
 				Category = product.Category,
-				Date = (DateOnly)product.CurrentDate,
+				Date = product.CurrentDate,
 				Url = product.Url,
-				IsBought = product.IsBought
-			});
+				IsBought = product.IsBought,
+				PriceHistory = priceHistoryList  
+			};
 
-			return Ok(productsdto);
+			return Ok(productDto);
 		}
 		[Authorize]
 		[HttpDelete("DeleteBestPriceProduct/{id}")]
@@ -215,16 +217,16 @@ namespace Graduation_Project.Controllers
 			return Ok(priceHistoriesdto);
 		}
 
-		[HttpGet("test-price-check/{itemId}")]
-		public async Task<IActionResult> TestPriceCheck(int itemId)
-		{
-			var product = await db.BestPriceProducts.FindAsync(itemId);
-			if (product == null)
-				return NotFound("❌ Product not found!");
+		//[HttpGet("test-price-check/{itemId}")]
+		//public async Task<IActionResult> TestPriceCheck(int itemId)
+		//{
+		//	var product = await db.BestPriceProducts.FindAsync(itemId);
+		//	if (product == null)
+		//		return NotFound("❌ Product not found!");
 
-			string newPrice = _priceCheckService.RunPythonScript(product.Url) ?? "Error retrieving price";
+		//	string newPrice = _priceCheckService.RunPythonScript(product.Url) ?? "Error retrieving price";
 
-			return Ok(new { ItemId = product.ItemId, OldPrice = product.CurrentPrice, NewPrice = newPrice });
-		}
+		//	return Ok(new { ItemId = product.ItemId, OldPrice = product.CurrentPrice, NewPrice = newPrice });
+		//}
 	}
 }

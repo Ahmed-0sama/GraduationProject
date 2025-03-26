@@ -1,22 +1,39 @@
-﻿
-namespace Graduation_Project.Services
+﻿using Graduation_Project.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+public class PriceCheckBackgroundService : BackgroundService
 {
-	public class EveryDayPriceCheckBackgroundService : BackgroundService
+	private readonly IServiceProvider _serviceProvider;
+
+	public PriceCheckBackgroundService(IServiceProvider serviceProvider)
 	{
-		private readonly EveryDayPriceCheackService _priceCheckService;
-		public EveryDayPriceCheckBackgroundService(EveryDayPriceCheackService priceCheckService)
+		_serviceProvider = serviceProvider;
+	}
+
+
+	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+	{
+		using (var scope = _serviceProvider.CreateScope())
 		{
-			_priceCheckService = priceCheckService;
+			var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
+			await priceCheckService.checkandupdate();  // 🔹 Run once immediately
 		}
 
-		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+		Console.WriteLine("Price check completed. Waiting for next run...");
+		while (!stoppingToken.IsCancellationRequested)
 		{
-			while (!stoppingToken.IsCancellationRequested)
+			using (var scope = _serviceProvider.CreateScope())
 			{
-				await _priceCheckService.checkandupdate();
-
-				await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
+				var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
+				await priceCheckService.checkandupdate();
 			}
+
+			Console.WriteLine("Price check completed. Waiting for next run...");
+			await Task.Delay(TimeSpan.FromHours(24), stoppingToken); // Runs every 24 hours
 		}
 	}
 }
