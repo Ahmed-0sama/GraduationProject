@@ -20,14 +20,12 @@ public partial class AppDbContext : IdentityDbContext<User>
     public virtual DbSet<Alert> Alerts { get; set; }
 
     public virtual DbSet<BestPriceProduct> BestPriceProducts { get; set; }
-
-    public virtual DbSet<Expense> Expenses { get; set; }
-
     public virtual DbSet<FinancialGoal> FinancialGoals { get; set; }
+	public DbSet<Expense> Expenses { get; set; }
+	public DbSet<PurchasedProduct> PurchasedProducts { get; set; }
+	public DbSet<MonthlyBill> MonthlyBills { get; set; }
 
-    public virtual DbSet<MonthlyBill> MonthlyBills { get; set; }
 
-    public virtual DbSet<PurchasedProduct> PurchasedProducts { get; set; }
 	public DbSet<ProductPriceHistory> ProductPriceHistories { get; set; }
 	public DbSet<UserToBuyList> UserToBuyLists { get; set; }
 	public virtual DbSet<ToBuyList> ToBuyLists { get; set; }
@@ -36,6 +34,12 @@ public partial class AppDbContext : IdentityDbContext<User>
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
 		base.OnModelCreating(modelBuilder);
+		modelBuilder.Entity<Expense>()
+		.HasOne(e => e.User)
+		.WithOne(u => u.Expense)
+		.HasForeignKey<Expense>(e => e.UserId)
+		.OnDelete(DeleteBehavior.Cascade);
+
 		modelBuilder.Entity<ToBuyList>()
 			.HasIndex(t => t.ProductName)
 			.HasDatabaseName("IX_ToBuyList_ProductName");
@@ -57,10 +61,25 @@ public partial class AppDbContext : IdentityDbContext<User>
 			.HasOne(bp => bp.ToBuyList)
 			.WithMany(tl => tl.BestPriceProducts)
 			.HasForeignKey(bp => bp.ToBuyListID);
+
 		modelBuilder.Entity<PurchasedProduct>()
 	   .HasOne(b => b.bestPriceProduct)
 	   .WithOne(p => p.PurchasedProduct)
-	   .HasForeignKey<PurchasedProduct>(b => b.PurchasedId);
+	   .HasForeignKey<PurchasedProduct>(b => b.PurchasedId)
+	   .IsRequired(false);
+
+		modelBuilder.Entity<PurchasedProduct>()
+			.HasOne(p => p.Expense)
+			.WithMany(e => e.PurchasedItems)
+			.HasForeignKey(p => p.ExpenseId)
+			.OnDelete(DeleteBehavior.Restrict);
+
+		// One-to-many relationship: Expense -> MonthlyBill
+		modelBuilder.Entity<MonthlyBill>()
+			.HasOne(b => b.Expense)
+			.WithMany(e => e.Bills)
+			.HasForeignKey(b => b.ExpenseId)
+			.OnDelete(DeleteBehavior.Cascade);
 	}
 	//protected override void OnModelCreating(ModelBuilder modelBuilder)
 	//{

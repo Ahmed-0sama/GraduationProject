@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace gp.Models;
 
-public partial class PurchasedProduct
+public class PurchasedProduct
 {
     [Key]
+	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int PurchasedId { get; set; }
 
     public string UserId { get; set; }
@@ -25,8 +27,9 @@ public partial class PurchasedProduct
 
     public string? ReceiptImage { get; set; }
 
-    public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
-    public int bestpriceproductId { get; set; }
+	public int ExpenseId { get; set; }
+	public virtual Expense Expense { get; set; }
+	public int ? bestpriceproductId { get; set; }
 	public virtual BestPriceProduct bestPriceProduct { get; set; }
 	public virtual User? User { get; set; }
 }

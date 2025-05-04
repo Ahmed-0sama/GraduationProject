@@ -17,9 +17,8 @@ public partial class User:IdentityUser
 
     public virtual ICollection<Alert> Alerts { get; set; } = new List<Alert>();
 
-    public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
-
-    public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
+	public virtual Expense Expense { get; set; }
+	public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
 
     public virtual ICollection<MonthlyBill> MonthlyBills { get; set; } = new List<MonthlyBill>();
 

@@ -24,8 +24,8 @@ public partial class MonthlyBill
     public DateOnly? StartDate { get; set; }
 
     public DateOnly? EndDate { get; set; }
+	public int ExpenseId { get; set; }
+	public virtual Expense Expense { get; set; }
 
-    public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
-
-    public virtual User? User { get; set; }
+	public virtual User? User { get; set; }
 }

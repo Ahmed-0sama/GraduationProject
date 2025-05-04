@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace gp.Models;
 
@@ -8,16 +9,10 @@ public partial class Expense
 {
     [Key]
 	public int ExpenseId { get; set; }
+	public string UserId { get; set; }
+	public virtual User User { get; set; }
+	public virtual ICollection<PurchasedProduct> PurchasedItems { get; set; } = new List<PurchasedProduct>();
 
-    public int? PurchasedId { get; set; }
+	public virtual ICollection<MonthlyBill> Bills { get; set; } = new List<MonthlyBill>();
 
-    public int? BillId { get; set; }
-
-    public int? UserId { get; set; }
-
-    public virtual MonthlyBill? Bill { get; set; }
-
-    public virtual PurchasedProduct? Purchased { get; set; }
-
-    public virtual User? User { get; set; }
 }

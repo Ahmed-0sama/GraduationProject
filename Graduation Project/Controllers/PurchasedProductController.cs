@@ -1,10 +1,15 @@
-﻿using gp.Models;
+﻿using Azure;
+using gp.Models;
 using Graduation_Project.DTO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Graduation_Project.Controllers
@@ -13,13 +18,15 @@ namespace Graduation_Project.Controllers
 	[ApiController]
 	public class PurchasedProductController : ControllerBase
 	{
+		private readonly IConfiguration _configuration;
 		AppDbContext db;
 		UserManager<User> userManager;
 		List<string> AllowedCategories = new List<string> { "Drinks", "Clothes", "Electronics", "Other" , "Food&Groceries" };
-		public PurchasedProductController(AppDbContext db, UserManager<User> userManager)
+		public PurchasedProductController(AppDbContext db, UserManager<User> userManager,IConfiguration configuration)
 		{
 			this.db = db;
 			this.userManager = userManager;
+			_configuration = configuration;
 		}
 		[Authorize]
 		[HttpPost("AddPurchasedProduct")]
@@ -36,6 +43,9 @@ namespace Graduation_Project.Controllers
 				{
 					return NotFound("User not found");
 				}
+				var expense = await db.Expenses
+				.Where(e => e.UserId == user.Id)
+				.FirstOrDefaultAsync();
 				PurchasedProduct product = new PurchasedProduct
 				{
 					UserId = user.Id,
@@ -45,6 +55,7 @@ namespace Graduation_Project.Controllers
 					Price = model.Price,
 					Quantity = model.Quantity,
 					ShopName = model.ShopName,
+					ExpenseId=expense.ExpenseId
 				};
 				db.PurchasedProducts.Add(product);
 				db.SaveChanges();
@@ -212,6 +223,132 @@ namespace Graduation_Project.Controllers
 			double total = db.PurchasedProducts.Where(p => p.UserId == user.Id).Sum(p => p.Price * p.Quantity);
 			return Ok(total);
 		}
-	}
+		[Authorize]
+		[HttpPost("AddReceipt")]
+		public async Task<IActionResult>uploadRecite(IFormFile formFile)
+		{
+			if (formFile == null || formFile.Length == 0)
+			{
+				return BadRequest("No file uploaded.");
+			}
+			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			string base64Image;
+			using (var ms = new MemoryStream())
+			{
+				await formFile.CopyToAsync(ms);
+				var imageBytes = ms.ToArray();
+				base64Image = Convert.ToBase64String(imageBytes);
+			}
+			var prompt = @"This is a photo of a receipt. 
+			Extract the following:
+			- The shop name
+			- The date of the receipt (in a standard format like yyyy-MM-dd)
+			- The items, grouped under these categories: Clothes, Electronics, Food & Groceries, Other. 
 
+			For each item, include:
+			- name
+			- quantity (if available)
+			- price
+
+			Return the result as a JSON object, like this:
+
+			{
+			  ""shop_name"": ""Walmart"",
+			  ""receipt_date"": ""2024-12-15"",
+			  ""items"": {
+				""Clothes"": [
+				  { ""name"": ""T-Shirt"", ""quantity"": 2, ""price"": 15.99 }
+				],
+				""Electronics"": [],
+				""Food & Groceries"": [],
+				""Other"": []
+			  }
+			}";
+			var requestPayload = new
+			{
+				contents = new[]
+				{
+				new
+				{
+				parts = new object[]
+				{
+					new { text = prompt },
+					new
+					{
+						inline_data = new
+						{
+							mime_type = formFile.ContentType,
+							data = base64Image
+						}
+					}
+				}
+			}
+				}
+			};
+			var geminiApiKey = _configuration["GeminiApi:geminiApiKey"];
+			using var client = new HttpClient();
+			var requestJson = JsonSerializer.Serialize(requestPayload);
+			var httpContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+			var response = await client.PostAsync(
+				$"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={geminiApiKey}",
+				httpContent
+			);
+			if (!response.IsSuccessStatusCode)
+			{
+				var error = await response.Content.ReadAsStringAsync();
+				return StatusCode((int)response.StatusCode, error);
+			}
+			var jsonResponse = await response.Content.ReadAsStringAsync();
+			var geminiResponse = JsonDocument.Parse(jsonResponse);
+			var rawText = geminiResponse.RootElement
+			.GetProperty("candidates")[0]
+			.GetProperty("content")
+			.GetProperty("parts")[0]
+			.GetProperty("text")
+			.GetString();
+
+			var jsonOnly = Regex.Match(rawText!, @"```json\s*(.*?)\s*```", RegexOptions.Singleline).Groups[1].Value;
+			var parsed = JsonDocument.Parse(jsonOnly);
+			var root = parsed.RootElement;
+
+			var shopName = root.GetProperty("shop_name").GetString() ?? "Unknown Shop";
+			var receiptDate = DateOnly.Parse(DateTime.Parse(root.GetProperty("receipt_date").GetString()!).ToShortDateString());
+			var itemsObj = root.GetProperty("items");
+			var expense = await db.Expenses
+				.Where(e => e.UserId == user.Id)
+				.FirstOrDefaultAsync();
+			if (expense.ExpenseId == null)
+			{
+				return NotFound("No expenses found");
+			}
+
+			foreach (var category in itemsObj.EnumerateObject())
+			{
+				foreach (var item in category.Value.EnumerateArray())
+				{
+					var product = new PurchasedProduct
+					{
+						UserId = user.Id,
+						Category = category.Name,
+						Date = receiptDate,
+						Price = item.GetProperty("price").GetDouble(),
+						Quantity = item.TryGetProperty("quantity", out var q) ? q.GetInt32() : 1,
+						ShopName = shopName,
+						ItemName = item.GetProperty("name").GetString() ?? "Unknown Item",
+						ReceiptImage = base64Image,
+						ExpenseId = expense.ExpenseId
+					};
+
+					db.PurchasedProducts.Add(product);
+					await db.SaveChangesAsync();
+				}
+			}
+			return Ok("Receipt items saved successfully.");
+		}
+	}
 }

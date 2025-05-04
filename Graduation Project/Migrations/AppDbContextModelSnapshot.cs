@@ -274,25 +274,14 @@ namespace Graduation_Project.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ExpenseId"));
 
-                    b.Property<int?>("BillId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PurchasedId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId1")
+                    b.Property<string>("UserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("ExpenseId");
 
-                    b.HasIndex("BillId");
-
-                    b.HasIndex("PurchasedId");
-
-                    b.HasIndex("UserId1");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("Expenses");
                 });
@@ -344,6 +333,9 @@ namespace Graduation_Project.Migrations
                     b.Property<DateOnly?>("EndDate")
                         .HasColumnType("date");
 
+                    b.Property<int>("ExpenseId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Issuer")
                         .HasColumnType("nvarchar(max)");
 
@@ -361,6 +353,8 @@ namespace Graduation_Project.Migrations
 
                     b.HasKey("BillId");
 
+                    b.HasIndex("ExpenseId");
+
                     b.HasIndex("UserId1");
 
                     b.ToTable("MonthlyBills");
@@ -369,6 +363,7 @@ namespace Graduation_Project.Migrations
             modelBuilder.Entity("gp.Models.PurchasedProduct", b =>
                 {
                     b.Property<int>("PurchasedId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     b.Property<string>("Category")
@@ -377,6 +372,9 @@ namespace Graduation_Project.Migrations
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
+
+                    b.Property<int>("ExpenseId")
+                        .HasColumnType("int");
 
                     b.Property<string>("ItemName")
                         .IsRequired()
@@ -399,10 +397,12 @@ namespace Graduation_Project.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("bestpriceproductId")
+                    b.Property<int?>("bestpriceproductId")
                         .HasColumnType("int");
 
                     b.HasKey("PurchasedId");
+
+                    b.HasIndex("ExpenseId");
 
                     b.HasIndex("UserId");
 
@@ -616,21 +616,11 @@ namespace Graduation_Project.Migrations
 
             modelBuilder.Entity("gp.Models.Expense", b =>
                 {
-                    b.HasOne("gp.Models.MonthlyBill", "Bill")
-                        .WithMany("Expenses")
-                        .HasForeignKey("BillId");
-
-                    b.HasOne("gp.Models.PurchasedProduct", "Purchased")
-                        .WithMany("Expenses")
-                        .HasForeignKey("PurchasedId");
-
                     b.HasOne("gp.Models.User", "User")
-                        .WithMany("Expenses")
-                        .HasForeignKey("UserId1");
-
-                    b.Navigation("Bill");
-
-                    b.Navigation("Purchased");
+                        .WithOne("Expense")
+                        .HasForeignKey("gp.Models.Expense", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -646,26 +636,40 @@ namespace Graduation_Project.Migrations
 
             modelBuilder.Entity("gp.Models.MonthlyBill", b =>
                 {
+                    b.HasOne("gp.Models.Expense", "Expense")
+                        .WithMany("Bills")
+                        .HasForeignKey("ExpenseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("gp.Models.User", "User")
                         .WithMany("MonthlyBills")
                         .HasForeignKey("UserId1");
+
+                    b.Navigation("Expense");
 
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("gp.Models.PurchasedProduct", b =>
                 {
+                    b.HasOne("gp.Models.Expense", "Expense")
+                        .WithMany("PurchasedItems")
+                        .HasForeignKey("ExpenseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("gp.Models.BestPriceProduct", "bestPriceProduct")
                         .WithOne("PurchasedProduct")
-                        .HasForeignKey("gp.Models.PurchasedProduct", "PurchasedId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("gp.Models.PurchasedProduct", "PurchasedId");
 
                     b.HasOne("gp.Models.User", "User")
                         .WithMany("PurchasedProducts")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Expense");
 
                     b.Navigation("User");
 
@@ -680,14 +684,11 @@ namespace Graduation_Project.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("gp.Models.MonthlyBill", b =>
+            modelBuilder.Entity("gp.Models.Expense", b =>
                 {
-                    b.Navigation("Expenses");
-                });
+                    b.Navigation("Bills");
 
-            modelBuilder.Entity("gp.Models.PurchasedProduct", b =>
-                {
-                    b.Navigation("Expenses");
+                    b.Navigation("PurchasedItems");
                 });
 
             modelBuilder.Entity("gp.Models.ToBuyList", b =>
@@ -701,7 +702,8 @@ namespace Graduation_Project.Migrations
                 {
                     b.Navigation("Alerts");
 
-                    b.Navigation("Expenses");
+                    b.Navigation("Expense")
+                        .IsRequired();
 
                     b.Navigation("FinancialGoals");
 

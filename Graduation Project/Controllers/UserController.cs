@@ -20,11 +20,13 @@ namespace gp.Controllers
 	[ApiController]
 	public class UserController : ControllerBase
 	{
+		AppDbContext db;
 		private readonly UserManager<User> userManager;
 		private readonly RoleManager<IdentityRole> roleManager;
 		private readonly IConfiguration configuration;
-		public UserController(UserManager<User> userManager, IConfiguration configuration, RoleManager<IdentityRole> roleManager)
+		public UserController(AppDbContext db,UserManager<User> userManager, IConfiguration configuration, RoleManager<IdentityRole> roleManager)
 		{
+			this.db = db;
 			this.userManager = userManager;
 			this.configuration = configuration;
 			this.roleManager = roleManager;
@@ -47,6 +49,14 @@ namespace gp.Controllers
 				IdentityResult result = await userManager.CreateAsync(user, registerfromform.Password);
 				if (result.Succeeded)
 				{
+					Expense expense = new Expense
+					{
+						UserId = user.Id
+					};
+
+					db.Expenses.Add(expense);
+					await db.SaveChangesAsync();
+
 					return Ok("Created");
 				}
 				foreach (var error in result.Errors)
