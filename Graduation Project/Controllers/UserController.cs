@@ -1,10 +1,13 @@
-﻿using gp.Models;
+﻿using Azure.Core;
+using gp.Models;
 using Graduation_Project.DTO;
+using Graduation_Project.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -37,7 +40,9 @@ namespace gp.Controllers
 					FirstName = registerfromform.fname,
 					lastName = registerfromform.lname,
 					Email = registerfromform.Email,
-					UserName = registerfromform.Email
+					UserName = registerfromform.Email,
+					RefreshToken = TokenRequest.GenerateRefreshToken(),
+					RefreshTokenExpirytime = DateTime.Now.AddDays(7)
 				};
 				IdentityResult result = await userManager.CreateAsync(user, registerfromform.Password);
 				if (result.Succeeded)
@@ -83,16 +88,76 @@ namespace gp.Controllers
 							expires: DateTime.Now.AddDays(30),
 							signingCredentials: singinCredentials
 						);
+						var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+						string refreshToken = TokenRequest.GenerateRefreshToken();
+						userdb.RefreshToken = refreshToken;
+						userdb.RefreshTokenExpirytime = DateTime.Now.AddDays(7);
+						await userManager.UpdateAsync(userdb);
 						return Ok(new
 						{
-							token = new JwtSecurityTokenHandler().WriteToken(token),
-							expiration = token.ValidTo
+							token = accessToken,
+							expiration = token.ValidTo,
+							refreshToken = refreshToken
 						});
 					}
 					ModelState.AddModelError("UserName", "Invalid UserName or Password");
 				}
 			}
 			return BadRequest(ModelState);
+		}
+		[HttpPost("RefreshToken")]
+		public async Task<IActionResult> RefreshToken(RefreshTokenDTO refreshTokenDTO)
+		{
+			if (string.IsNullOrEmpty(refreshTokenDTO.RefreshToken) || string.IsNullOrEmpty(refreshTokenDTO.AccessToken))
+			{
+				return BadRequest("Invalid token request");
+			}
+			var principal = TokenRequest.GetPrincipalFromExpiredToken(
+			refreshTokenDTO.AccessToken,
+			configuration["JWT:Key"],
+			configuration["JWT:Issuer"],
+			configuration["JWT:Audience"]
+			);
+			if (principal == null)
+			{
+				return Unauthorized("Invalid or expired access token");
+			}
+
+			var username = principal.Identity?.Name;
+			var userdb = await userManager.FindByNameAsync(username);
+			if (userdb == null || userdb.RefreshTokenExpirytime <= DateTime.Now)
+			{
+				return Unauthorized("Invalid or expired refresh token");
+			}
+			var userClaims = new List<Claim>
+			{
+				new Claim (JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString()),
+				new Claim(ClaimTypes.NameIdentifier,userdb.Id),
+				new Claim(ClaimTypes.Name,userdb.UserName)
+			};
+			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"]));
+			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+			var newToken = new JwtSecurityToken(
+			issuer: configuration["JWT:Issuer"],
+			audience: configuration["JWT:Audience"],
+			claims: userClaims,
+			expires: DateTime.Now.AddMinutes(30),
+			signingCredentials: creds
+			);
+
+			var newAccessToken = new JwtSecurityTokenHandler().WriteToken(newToken);
+
+			string newRefreshToken = TokenRequest.GenerateRefreshToken();
+			userdb.RefreshToken = newRefreshToken;
+			userdb.RefreshTokenExpirytime = DateTime.Now.AddDays(7);
+			await userManager.UpdateAsync(userdb);
+
+			return Ok(new
+			{
+				token = newAccessToken,
+				expiration = newToken.ValidTo,
+				refreshToken = newRefreshToken
+			});
 		}
 		[Authorize(Roles = "Admin")]
 		[HttpGet("AllUsers")]

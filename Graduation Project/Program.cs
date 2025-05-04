@@ -19,9 +19,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<AmazonScrappingService>();
 builder.Services.AddScoped<NoonScrappingService>();
 builder.Services.AddScoped<JumiaScrappingService>();
-builder.Services.AddScoped<EveryDayPriceCheackService>();
+//builder.Services.AddScoped<EveryDayPriceCheackService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddHostedService<PriceCheckBackgroundService>();
+//builder.Services.AddHostedService<PriceCheckBackgroundService>();
 builder.Services.AddIdentity<User, IdentityRole>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();

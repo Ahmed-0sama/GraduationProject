@@ -12,6 +12,8 @@ public partial class User:IdentityUser
     public byte[]? Photo { get; set; }
 
     public bool? IsAdmin { get; set; }
+    public string RefreshToken { get; set;}
+    public DateTime RefreshTokenExpirytime { get; set; }
 
     public virtual ICollection<Alert> Alerts { get; set; } = new List<Alert>();
 
