@@ -295,7 +295,7 @@ namespace Graduation_Project.Controllers
 			var httpContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
 			var response = await client.PostAsync(
-				$"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={geminiApiKey}",
+				$"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={geminiApiKey}",
 				httpContent
 			);
 			if (!response.IsSuccessStatusCode)
