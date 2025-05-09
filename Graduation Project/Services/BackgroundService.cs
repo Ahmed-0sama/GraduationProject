@@ -20,7 +20,7 @@ public class PriceCheckBackgroundService : BackgroundService
 		using (var scope = _serviceProvider.CreateScope())
 		{
 			var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
-			await priceCheckService.checkandupdate();  // 🔹 Run once immediately
+			await priceCheckService.checkandupdate(); 
 		}
 
 		Console.WriteLine("Price check completed. Waiting for next run...");
@@ -33,7 +33,7 @@ public class PriceCheckBackgroundService : BackgroundService
 			}
 
 			Console.WriteLine("Price check completed. Waiting for next run...");
-			await Task.Delay(TimeSpan.FromHours(24), stoppingToken); // Runs every 24 hours
+			await Task.Delay(TimeSpan.FromHours(24), stoppingToken); 
 		}
 	}
 }

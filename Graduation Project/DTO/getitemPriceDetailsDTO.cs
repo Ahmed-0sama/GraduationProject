@@ -12,13 +12,13 @@
 
 		public string? Url { get; set; }
 
-		public int Quantity { get; set; }
+		//public int Quantity { get; set; }
 
 		public string? ShopName { get; set; }
 
 		public string? ProductName { get; set; }
 
-		public bool? IsBought { get; set; }
+		//public bool? IsBought { get; set; }
 		public List<PriceHistoryDTO> PriceHistory { get; set; } = new List<PriceHistoryDTO>();
 	}
 }

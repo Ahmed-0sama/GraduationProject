@@ -138,13 +138,13 @@ namespace Graduation_Project.Services
 						Console.WriteLine("Python Error: " + errors);
 					}
 
-					return output;  // ✅ Return the output of the script
+					return output;  
 				}
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error running Python script: " + ex.Message);
-				return null;  // ✅ Return null if an error occurs
+				return null;  
 			}
 		}
 	}

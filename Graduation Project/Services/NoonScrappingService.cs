@@ -11,7 +11,7 @@ namespace Graduation_Project.Services
 			{
 				this.db = db;
 			}
-			public async Task StartScraping(string name, int listid)
+			public async Task StartScraping(string name, int listid,string category)
 			{
 				string searchQuery = name;
 				string pythonScriptPath = @"D:\enviroment\Graduation Project\Graduation Project\webscrapping\NoonScrapping.py";
@@ -54,10 +54,10 @@ namespace Graduation_Project.Services
 								BestPriceProduct pro = new BestPriceProduct();
 								pro.ProductName = product.Name;
 								pro.Url = product.Link;
-								pro.Category = "Drinks";
+								pro.Category = category;
 								pro.CurrentDate = DateOnly.FromDateTime(DateTime.UtcNow);
 								pro.ShopName = "Noon";
-								pro.IsBought = false;
+								//pro.IsBought = false;
 								pro.CurrentPrice = Convert.ToDouble(product.Price.Replace("EGP", "").Replace("\n", "").Trim());
 								pro.Image = product.Image;
 								pro.ToBuyListID = listid;

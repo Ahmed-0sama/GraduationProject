@@ -65,7 +65,7 @@ public partial class AppDbContext : IdentityDbContext<User>
 		modelBuilder.Entity<PurchasedProduct>()
 	   .HasOne(b => b.bestPriceProduct)
 	   .WithOne(p => p.PurchasedProduct)
-	   .HasForeignKey<PurchasedProduct>(b => b.PurchasedId)
+	   .HasForeignKey<PurchasedProduct>(b => b.NewPurchasedId)
 	   .IsRequired(false);
 
 		modelBuilder.Entity<PurchasedProduct>()

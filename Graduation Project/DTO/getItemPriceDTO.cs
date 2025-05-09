@@ -7,6 +7,6 @@
 		public double Price { get; set; }
 		public string ShopName { get; set; }
 		public string ProductName { get; set; }
-		public bool? IsBought { get; set; }
+		//public bool? IsBought { get; set; }
 	}
 }

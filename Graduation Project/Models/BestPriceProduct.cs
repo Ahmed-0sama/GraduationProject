@@ -22,13 +22,13 @@ public partial class BestPriceProduct
 
     public string? Url { get; set; }
 
-    public int Quantity { get; set; }
+    //public int Quantity { get; set; }
 
     public string? ShopName { get; set; }
 
     public string? ProductName { get; set; }
 
-    public bool? IsBought { get; set; }
+   // public bool? IsBought { get; set; }
     [ForeignKey("ListId")]
 	public int ToBuyListID { get; set; }
     public virtual ToBuyList ToBuyList { get; set; }

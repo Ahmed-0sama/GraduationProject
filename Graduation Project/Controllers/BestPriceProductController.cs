@@ -51,7 +51,7 @@ namespace Graduation_Project.Controllers
 					ProductName = dto.productName,
 					CurrentPrice = dto.price,
 					ShopName = dto.shopName,
-					Quantity = dto.quantity,
+					//Quantity = dto.quantity,
 					Image = dto.image,
 					Category = dto.category,
 					CurrentDate = dto.date,
@@ -99,12 +99,12 @@ namespace Graduation_Project.Controllers
 				ProductName = product.ProductName,
 				Price = product.CurrentPrice,
 				ShopName = product.ShopName,
-				Quantity = product.Quantity,
+				//Quantity = product.Quantity,
 				Image = product.Image,
 				Category = product.Category,
 				Date = product.CurrentDate,
 				Url = product.Url,
-				IsBought = product.IsBought,
+				//IsBought = product.IsBought,
 				PriceHistory = priceHistoryList  
 			};
 
@@ -147,7 +147,7 @@ namespace Graduation_Project.Controllers
 				ProductName = item.ProductName,
 				Price = item.CurrentPrice,
 				ShopName = item.ShopName,
-				IsBought = item.IsBought,
+				//IsBought = item.IsBought,
 				Image = item.Image
 			}).ToList();
 
@@ -167,25 +167,21 @@ namespace Graduation_Project.Controllers
 				return NotFound("Product not found");
 			}
 			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			var expenses= await db.Expenses.SingleOrDefaultAsync(e => e.UserId == user.Id);
 			if (user == null)
 			{
 				return NotFound("User not found");
 			}
-			if (product.IsBought == true)
-			{
-				return BadRequest("Product already marked as purchased");
-			}
-			//product.IsBought = true;
-
 			PurchasedProduct purchasedProduct = new PurchasedProduct
 			{
 				UserId = user.Id,
 				Category = product.Category,
 				Date = (DateOnly)product.CurrentDate,
 				Price = product.CurrentPrice,
-				Quantity = product.Quantity,
+				//Quantity = product.Quantity,
 				ShopName = product.ShopName,
 				ItemName = product.ProductName,
+				ExpenseId = expenses.ExpenseId
 			};
 			db.PurchasedProducts.Add(purchasedProduct);
 			db.SaveChanges();

@@ -11,6 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Text;
 using User = gp.Models.User;
 
 namespace Graduation_Project.Controllers
@@ -24,13 +27,15 @@ namespace Graduation_Project.Controllers
 		private readonly AmazonScrappingService amazon;
 		private readonly NoonScrappingService noon;
 		private readonly JumiaScrappingService jumia;
-		public ToBuyListController(UserManager<User> userManager, AppDbContext db,AmazonScrappingService amazon,NoonScrappingService noon,JumiaScrappingService jumia)
+		private readonly IConfiguration configuration;
+		public ToBuyListController(UserManager<User> userManager, AppDbContext db,AmazonScrappingService amazon,NoonScrappingService noon,JumiaScrappingService jumia,IConfiguration configuration)
 		{
 			this.userManager = userManager;
 			this.db = db;
 			this.amazon = amazon;
 			this.noon = noon;
 			this.jumia = jumia;
+			this.configuration = configuration;
 		}
 		[HttpPost("AddToBuyList")]
 		[Authorize]
@@ -54,11 +59,13 @@ namespace Graduation_Project.Controllers
 						{
 							ProductName = dto.ProductName,
 						};
+
 						await db.ToBuyLists.AddAsync(toBuyList);
 						await db.SaveChangesAsync();
-						await amazon.StartScraping(dto.ProductName, toBuyList.ListId);
-						await noon.StartScraping(dto.ProductName, toBuyList.ListId);
-						await jumia.StartScraping(dto.ProductName, toBuyList.ListId);
+						string category=await GetProductCategoryFromGeminiAsync(dto.ProductName);
+						await amazon.StartScraping(dto.ProductName, toBuyList.ListId, category);
+						await noon.StartScraping(dto.ProductName, toBuyList.ListId, category);
+						await jumia.StartScraping(dto.ProductName, toBuyList.ListId, category);
 						UserToBuyList userlist = new UserToBuyList
 						{
 							UserId = user.Id,
@@ -93,6 +100,68 @@ namespace Graduation_Project.Controllers
 				}
 			}
 			return BadRequest(ModelState);
+		}
+		private async Task<string> GetProductCategoryFromGeminiAsync(string itemName)
+		{
+
+				var prompt = $@"
+				Classify the following item into one of these categories: Clothes, Electronics, Food & Groceries, Other.
+
+				Item: {itemName}
+
+				Respond only with a valid JSON object like this (no code block or markdown):
+
+				{{ ""category"": ""Clothes"" }}";
+
+			var requestPayload = new
+			{
+				contents = new[]
+				{
+			new
+			{
+				parts = new[]
+				{
+					new { text = prompt }
+				}
+			}
+		}
+			};
+
+			var apiKey = configuration["GeminiApi:geminiApiKey"];
+
+			using var client = new HttpClient();
+			var json = JsonSerializer.Serialize(requestPayload);
+			var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+			var response = await client.PostAsync(
+				$"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={apiKey}",
+				content
+			);
+
+			try
+			{
+				var responseString = await response.Content.ReadAsStringAsync();
+				Console.WriteLine("Gemini raw response: " + responseString);
+				using var doc = JsonDocument.Parse(responseString);
+				var candidates = doc.RootElement.GetProperty("candidates");
+				var parts = candidates[0].GetProperty("content").GetProperty("parts");
+				var text = parts[0].GetProperty("text").GetString();
+
+				// Clean the text from markdown formatting
+				var cleanedText = text.Replace("```json", "").Replace("```", "").Trim();
+
+				using var categoryJson = JsonDocument.Parse(cleanedText);
+				if (categoryJson.RootElement.TryGetProperty("category", out var category))
+				{
+					return category.GetString();
+				}
+			}
+			catch
+			{
+				Console.WriteLine("categrising the data error " + response.ToString());
+			}
+
+			return null;
 		}
 		[Authorize]
 		[HttpGet("GetToBuyList")]

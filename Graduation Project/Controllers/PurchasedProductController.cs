@@ -21,7 +21,7 @@ namespace Graduation_Project.Controllers
 		private readonly IConfiguration _configuration;
 		AppDbContext db;
 		UserManager<User> userManager;
-		List<string> AllowedCategories = new List<string> { "Drinks", "Clothes", "Electronics", "Other" , "Food&Groceries" };
+		List<string> AllowedCategories = new List<string> { "Clothes","Electronics"," Food & Groceries"," Other" };
 		public PurchasedProductController(AppDbContext db, UserManager<User> userManager,IConfiguration configuration)
 		{
 			this.db = db;
@@ -295,7 +295,7 @@ namespace Graduation_Project.Controllers
 			var httpContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
 			var response = await client.PostAsync(
-				$"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={geminiApiKey}",
+				$"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={geminiApiKey}",
 				httpContent
 			);
 			if (!response.IsSuccessStatusCode)
