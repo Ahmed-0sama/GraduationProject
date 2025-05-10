@@ -17,6 +17,8 @@ namespace Graduation_Project.Services
 			this.db = db;
 
 		}
+		//if the price is set to 0 then the price is removed form the website and have to be  
+		// appear as removed from the website  so take care please!!!
 		public async Task checkandupdate()
 		{
 			var products = await db.BestPriceProducts
@@ -54,20 +56,26 @@ namespace Graduation_Project.Services
 					throw new Exception($"[error] failed to parse json response for url: {product.Url}", ex);
 				}
 
-				if (newprice.HasValue)
+				if (newprice.HasValue&&newprice.Value!=product.CurrentPrice)
 				{
-					pricehistoryentries.Add(new ProductPriceHistory
-					{
-						ItemId = product.ItemId,
-						Price = newprice.Value,
-						DateRecorded = DateOnly.FromDateTime(DateTime.UtcNow)
-					});
+					var lastPriceEntry = await db.ProductPriceHistories
+					.Where(h => h.ItemId == product.ItemId)
+					.OrderByDescending(h => h.DateRecorded)
+					.FirstOrDefaultAsync();
+					if(lastPriceEntry == null || lastPriceEntry.Price != newprice.Value){
+						pricehistoryentries.Add(new ProductPriceHistory
+						{
+							ItemId = product.ItemId,
+							Price = newprice.Value,
+							DateRecorded = DateOnly.FromDateTime(DateTime.UtcNow)
+						});
 
-					var existingproduct = await db.BestPriceProducts.FindAsync(product.ItemId);
-					if (existingproduct != null)
-					{
-						existingproduct.CurrentPrice = newprice.Value;
-						productstoupdate.Add(existingproduct);
+						var existingproduct = await db.BestPriceProducts.FindAsync(product.ItemId);
+						if (existingproduct != null)
+						{
+							existingproduct.CurrentPrice = newprice.Value;
+							productstoupdate.Add(existingproduct);
+						}
 					}
 				}
 			}
@@ -87,28 +95,6 @@ namespace Graduation_Project.Services
 			}
 
 		}
-		//public async Task checkandupdate()
-		//{
-		//	string url = "https://www.noon.com/egypt-en/classic-coffee-95grams/N28968510A/p/?o=dcf5e5c734b8957b&shareId=51bb71ba-f4b3-49ce-9eb5-097752af6068";
-
-		//	try
-		//	{
-		//		string result = RunPythonScript(url);
-
-		//		if (!string.IsNullOrEmpty(result))
-		//		{
-		//			Console.WriteLine("[INFO] Python Script Output: " + result);
-		//		}
-		//		else
-		//		{
-		//			Console.WriteLine("[WARNING] Python script did not return any output.");
-		//		}
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		Console.WriteLine("[ERROR] " + ex.Message);
-		//	}
-		//}
 		public string RunPythonScript(string productUrl)
 		{
 			string scriptPath = @"D:\enviroment\Graduation Project\Graduation Project\webscrapping\PriceScrappingService.py";

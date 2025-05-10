@@ -37,9 +37,9 @@ def fetch_amazon_price(driver):
             EC.presence_of_element_located((By.CSS_SELECTOR, ".a-price-whole"))
         )
         price_text = name_element.text.strip()
-        return clean_price(price_text)  # FIX: Clean the extracted price
+        return clean_price(price_text)  
     except Exception as e:
-        return f"Amazon price not found: {e}"
+        return "0"
 
 def fetch_jumia_price(driver):
     try:
@@ -61,7 +61,7 @@ def fetch_jumia_price(driver):
         price_text = name_element.text.strip()
         return clean_price(price_text)
     except Exception as e:
-        return f"Jumia price not found: {e}"
+        return "0"
 
 def fetch_noon_price(driver):
     try:
@@ -71,7 +71,7 @@ def fetch_noon_price(driver):
         price_text = name_element.text.strip()
         return clean_price(price_text)
     except Exception as e:
-        return f"Noon price not found: {e}"
+        return "0"
 
 def main():
     if len(sys.argv) < 2:
