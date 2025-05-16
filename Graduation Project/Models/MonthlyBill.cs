@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace gp.Models;
 
@@ -9,7 +10,7 @@ public partial class MonthlyBill
     [Key]
 	public int BillId { get; set; }
 
-    public int? UserId { get; set; }
+    public string? UserId { get; set; }
 
     public string? Name { get; set; }
 
@@ -21,9 +22,10 @@ public partial class MonthlyBill
 
     public int? Duration { get; set; }
 
-    public DateOnly? StartDate { get; set; }
+    public DateTime? StartDate { get; set; }
 
-    public DateOnly? EndDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    [ForeignKey("ExpenseId")]
 	public int ExpenseId { get; set; }
 	public virtual Expense Expense { get; set; }
 
