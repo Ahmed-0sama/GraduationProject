@@ -220,7 +220,13 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("User not found");
 			}
-			double total = db.PurchasedProducts.Where(p => p.UserId == user.Id).Sum(p => p.Price * p.Quantity);
+			var currentMonth = DateTime.UtcNow.Month;
+			var currentYear = DateTime.UtcNow.Year;
+
+			double total = await db.PurchasedProducts
+				.Where(p => p.UserId == user.Id && p.Date.Month == currentMonth && p.Date.Year == currentYear)
+				.SumAsync(p => p.Price * p.Quantity);
+
 			return Ok(total);
 		}
 		[Authorize]

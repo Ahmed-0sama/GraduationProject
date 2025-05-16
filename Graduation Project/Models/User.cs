@@ -2,11 +2,13 @@
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace gp.Models;
 
 public partial class User:IdentityUser
 {
+    [Key]
     public string? FirstName { get; set; }
     public string? lastName { get; set; }
     public byte[]? Photo { get; set; }
