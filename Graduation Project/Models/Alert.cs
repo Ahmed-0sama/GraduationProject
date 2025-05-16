@@ -10,13 +10,13 @@ public partial class Alert
     [Key]
 	public int AlertId { get; set; }
     
-    public string? UserId { get; set; }
+    public string UserId { get; set; }
 
     public string? Message { get; set; }
 
     public DateTime? DateTime { get; set; }
 
-    public string? Type { get; set; }
+    public int Type { get; set; }
 
     public virtual User? User { get; set; }
 }

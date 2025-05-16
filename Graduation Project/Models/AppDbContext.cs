@@ -20,7 +20,7 @@ public partial class AppDbContext : IdentityDbContext<User>
     public virtual DbSet<Alert> Alerts { get; set; }
 
     public virtual DbSet<BestPriceProduct> BestPriceProducts { get; set; }
-    public virtual DbSet<FinancialGoal> FinancialGoals { get; set; }
+   // public virtual DbSet<FinancialGoal> FinancialGoals { get; set; }
 	public DbSet<Expense> Expenses { get; set; }
 	public DbSet<PurchasedProduct> PurchasedProducts { get; set; }
 	public DbSet<MonthlyBill> MonthlyBills { get; set; }

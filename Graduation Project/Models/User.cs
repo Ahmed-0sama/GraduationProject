@@ -10,7 +10,8 @@ public partial class User:IdentityUser
     public string? FirstName { get; set; }
     public string? lastName { get; set; }
     public byte[]? Photo { get; set; }
-
+    public float?salary { get; set; }
+    public float? financialGoal { get; set; }
     public bool? IsAdmin { get; set; }
     public string RefreshToken { get; set;}
     public DateTime RefreshTokenExpirytime { get; set; }
@@ -18,7 +19,7 @@ public partial class User:IdentityUser
     public virtual ICollection<Alert> Alerts { get; set; } = new List<Alert>();
 
 	public virtual Expense Expense { get; set; }
-	public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
+	//public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
 
     public virtual ICollection<MonthlyBill> MonthlyBills { get; set; } = new List<MonthlyBill>();
 
