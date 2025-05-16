@@ -21,7 +21,7 @@ namespace Graduation_Project.Controllers
 		private readonly IConfiguration _configuration;
 		AppDbContext db;
 		UserManager<User> userManager;
-		List<string> AllowedCategories = new List<string> { "Clothes","Electronics"," Food & Groceries"," Other" };
+		List<string> AllowedCategories = new List<string> { "Clothes","Electronics","Food & Groceries"," Other" };
 		public PurchasedProductController(AppDbContext db, UserManager<User> userManager,IConfiguration configuration)
 		{
 			this.db = db;
