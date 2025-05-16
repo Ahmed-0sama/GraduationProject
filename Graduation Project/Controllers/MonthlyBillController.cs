@@ -29,7 +29,7 @@ namespace Graduation_Project.Controllers
 			_configuration = configuration;
 		}
 		[Authorize]
-		[HttpGet("User/{UserId}/expenses/Total")]
+		[HttpGet("User/expenses/Total")]
 		public async Task<ActionResult<decimal>> GetTotalExpenses()
 		{
 			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
