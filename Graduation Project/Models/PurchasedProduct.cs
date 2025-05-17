@@ -8,7 +8,6 @@ namespace gp.Models;
 public class PurchasedProduct
 {
     [Key]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 	public int NewPurchasedId { get; set; }
 
     public string UserId { get; set; }

@@ -25,6 +25,7 @@ builder.Services.AddHostedService<PriceCheckBackgroundService>();
 builder.Services.AddIdentity<User, IdentityRole>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
+builder.Services.AddHttpClient();
 builder.Services.AddAuthentication(options =>
 {
 	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

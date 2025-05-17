@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Graduation_Project.Migrations
 {
     /// <inheritdoc />
-    public partial class removetheconstraint : Migration
+    public partial class m1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,6 +33,8 @@ namespace Graduation_Project.Migrations
                     FirstName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     lastName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Photo = table.Column<byte[]>(type: "varbinary(max)", nullable: true),
+                    salary = table.Column<float>(type: "real", nullable: true),
+                    financialGoal = table.Column<float>(type: "real", nullable: true),
                     IsAdmin = table.Column<bool>(type: "bit", nullable: true),
                     RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RefreshTokenExpirytime = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -96,10 +98,10 @@ namespace Graduation_Project.Migrations
                 {
                     AlertId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Message = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DateTime = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Type = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Type = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -108,7 +110,8 @@ namespace Graduation_Project.Migrations
                         name: "FK_Alerts_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -216,27 +219,6 @@ namespace Graduation_Project.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "FinancialGoals",
-                columns: table => new
-                {
-                    GoalId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    MonthlySpendingLimit = table.Column<double>(type: "float", nullable: true),
-                    SavingGoal = table.Column<double>(type: "float", nullable: true),
-                    UserId1 = table.Column<string>(type: "nvarchar(450)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_FinancialGoals", x => x.GoalId);
-                    table.ForeignKey(
-                        name: "FK_FinancialGoals_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "BestPriceProducts",
                 columns: table => new
                 {
@@ -247,10 +229,8 @@ namespace Graduation_Project.Migrations
                     CurrentDate = table.Column<DateOnly>(type: "date", nullable: true),
                     CurrentPrice = table.Column<double>(type: "float", nullable: false),
                     Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Quantity = table.Column<int>(type: "int", nullable: false),
                     ShopName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ProductName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsBought = table.Column<bool>(type: "bit", nullable: true),
                     ToBuyListID = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -294,23 +274,22 @@ namespace Graduation_Project.Migrations
                 {
                     BillId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Issuer = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Category = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Amount = table.Column<double>(type: "float", nullable: true),
                     Duration = table.Column<int>(type: "int", nullable: true),
-                    StartDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    EndDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    ExpenseId = table.Column<int>(type: "int", nullable: false),
-                    UserId1 = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ExpenseId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MonthlyBills", x => x.BillId);
                     table.ForeignKey(
-                        name: "FK_MonthlyBills_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
+                        name: "FK_MonthlyBills_AspNetUsers_UserId",
+                        column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
                     table.ForeignKey(
@@ -346,7 +325,8 @@ namespace Graduation_Project.Migrations
                 name: "PurchasedProducts",
                 columns: table => new
                 {
-                    PurchasedId = table.Column<int>(type: "int", nullable: false),
+                    NewPurchasedId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Date = table.Column<DateOnly>(type: "date", nullable: false),
@@ -360,7 +340,7 @@ namespace Graduation_Project.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PurchasedProducts", x => x.PurchasedId);
+                    table.PrimaryKey("PK_PurchasedProducts", x => x.NewPurchasedId);
                     table.ForeignKey(
                         name: "FK_PurchasedProducts_AspNetUsers_UserId",
                         column: x => x.UserId,
@@ -368,8 +348,8 @@ namespace Graduation_Project.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_PurchasedProducts_BestPriceProducts_PurchasedId",
-                        column: x => x.PurchasedId,
+                        name: "FK_PurchasedProducts_BestPriceProducts_bestpriceproductId",
+                        column: x => x.bestpriceproductId,
                         principalTable: "BestPriceProducts",
                         principalColumn: "ItemId");
                     table.ForeignKey(
@@ -436,24 +416,26 @@ namespace Graduation_Project.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinancialGoals_UserId1",
-                table: "FinancialGoals",
-                column: "UserId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_MonthlyBills_ExpenseId",
                 table: "MonthlyBills",
                 column: "ExpenseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MonthlyBills_UserId1",
+                name: "IX_MonthlyBills_UserId",
                 table: "MonthlyBills",
-                column: "UserId1");
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductPriceHistories_ItemId",
                 table: "ProductPriceHistories",
                 column: "ItemId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchasedProducts_bestpriceproductId",
+                table: "PurchasedProducts",
+                column: "bestpriceproductId",
+                unique: true,
+                filter: "[bestpriceproductId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PurchasedProducts_ExpenseId",
@@ -496,9 +478,6 @@ namespace Graduation_Project.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
-
-            migrationBuilder.DropTable(
-                name: "FinancialGoals");
 
             migrationBuilder.DropTable(
                 name: "MonthlyBills");

@@ -208,10 +208,11 @@ namespace Graduation_Project.Migrations
                     b.Property<string>("Message")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("AlertId");
@@ -280,33 +281,6 @@ namespace Graduation_Project.Migrations
                     b.ToTable("Expenses");
                 });
 
-            modelBuilder.Entity("gp.Models.FinancialGoal", b =>
-                {
-                    b.Property<int>("GoalId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GoalId"));
-
-                    b.Property<double?>("MonthlySpendingLimit")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("SavingGoal")
-                        .HasColumnType("float");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId1")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("GoalId");
-
-                    b.HasIndex("UserId1");
-
-                    b.ToTable("FinancialGoals");
-                });
-
             modelBuilder.Entity("gp.Models.MonthlyBill", b =>
                 {
                     b.Property<int>("BillId")
@@ -324,8 +298,8 @@ namespace Graduation_Project.Migrations
                     b.Property<int?>("Duration")
                         .HasColumnType("int");
 
-                    b.Property<DateOnly?>("EndDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("ExpenseId")
                         .HasColumnType("int");
@@ -336,29 +310,28 @@ namespace Graduation_Project.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateOnly?>("StartDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId1")
+                    b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("BillId");
 
                     b.HasIndex("ExpenseId");
 
-                    b.HasIndex("UserId1");
+                    b.HasIndex("UserId");
 
                     b.ToTable("MonthlyBills");
                 });
 
             modelBuilder.Entity("gp.Models.PurchasedProduct", b =>
                 {
-                    b.Property<int>("PurchasedId")
+                    b.Property<int>("NewPurchasedId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NewPurchasedId"));
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -394,11 +367,15 @@ namespace Graduation_Project.Migrations
                     b.Property<int?>("bestpriceproductId")
                         .HasColumnType("int");
 
-                    b.HasKey("PurchasedId");
+                    b.HasKey("NewPurchasedId");
 
                     b.HasIndex("ExpenseId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("bestpriceproductId")
+                        .IsUnique()
+                        .HasFilter("[bestpriceproductId] IS NOT NULL");
 
                     b.ToTable("PurchasedProducts");
                 });
@@ -491,8 +468,14 @@ namespace Graduation_Project.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<float?>("financialGoal")
+                        .HasColumnType("real");
+
                     b.Property<string>("lastName")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<float?>("salary")
+                        .HasColumnType("real");
 
                     b.HasKey("Id");
 
@@ -592,7 +575,9 @@ namespace Graduation_Project.Migrations
                 {
                     b.HasOne("gp.Models.User", "User")
                         .WithMany("Alerts")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -619,15 +604,6 @@ namespace Graduation_Project.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("gp.Models.FinancialGoal", b =>
-                {
-                    b.HasOne("gp.Models.User", "User")
-                        .WithMany("FinancialGoals")
-                        .HasForeignKey("UserId1");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("gp.Models.MonthlyBill", b =>
                 {
                     b.HasOne("gp.Models.Expense", "Expense")
@@ -638,7 +614,7 @@ namespace Graduation_Project.Migrations
 
                     b.HasOne("gp.Models.User", "User")
                         .WithMany("MonthlyBills")
-                        .HasForeignKey("UserId1");
+                        .HasForeignKey("UserId");
 
                     b.Navigation("Expense");
 
@@ -653,15 +629,15 @@ namespace Graduation_Project.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("gp.Models.BestPriceProduct", "bestPriceProduct")
-                        .WithOne("PurchasedProduct")
-                        .HasForeignKey("gp.Models.PurchasedProduct", "PurchasedId");
-
                     b.HasOne("gp.Models.User", "User")
                         .WithMany("PurchasedProducts")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("gp.Models.BestPriceProduct", "bestPriceProduct")
+                        .WithOne("PurchasedProduct")
+                        .HasForeignKey("gp.Models.PurchasedProduct", "bestpriceproductId");
 
                     b.Navigation("Expense");
 
@@ -698,8 +674,6 @@ namespace Graduation_Project.Migrations
 
                     b.Navigation("Expense")
                         .IsRequired();
-
-                    b.Navigation("FinancialGoals");
 
                     b.Navigation("MonthlyBills");
 

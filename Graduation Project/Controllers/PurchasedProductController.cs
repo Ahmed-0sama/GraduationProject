@@ -1,6 +1,7 @@
 ﻿using Azure;
 using gp.Models;
 using Graduation_Project.DTO;
+using Graduation_Project.Helping_Functions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -16,13 +17,13 @@ namespace Graduation_Project.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-	public class PurchasedProductController : ControllerBase
+	public class PurchasedProductController : BaseController
 	{
 		private readonly IConfiguration _configuration;
 		AppDbContext db;
 		UserManager<User> userManager;
 		List<string> AllowedCategories = new List<string> { "Clothes","Electronics","Food & Groceries"," Other" };
-		public PurchasedProductController(AppDbContext db, UserManager<User> userManager,IConfiguration configuration)
+		public PurchasedProductController(AppDbContext db, UserManager<User> userManager, IConfiguration configuration,IEmailService emailService):base(db, emailService)
 		{
 			this.db = db;
 			this.userManager = userManager;
@@ -220,15 +221,11 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("User not found");
 			}
-			var currentMonth = DateTime.UtcNow.Month;
-			var currentYear = DateTime.UtcNow.Year;
-
-			double total = await db.PurchasedProducts
-				.Where(p => p.UserId == user.Id && p.Date.Month == currentMonth && p.Date.Year == currentYear)
-				.SumAsync(p => p.Price * p.Quantity);
+			var total =await CalculateTotalPurchasedByUser(user);
 
 			return Ok(total);
 		}
+		
 		[Authorize]
 		[HttpPost("AddReceipt")]
 		public async Task<IActionResult>uploadRecite(IFormFile formFile)

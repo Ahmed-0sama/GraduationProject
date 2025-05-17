@@ -18,15 +18,14 @@ namespace Graduation_Project.Controllers
 	[ApiController]
 	public class ExpensesController : ControllerBase
 	{
-		private readonly IConfiguration _configuration;
+		private readonly IConfiguration configuration;
 		AppDbContext db;
 		UserManager<User> userManager;
-		List<string> AllowedCategories = new List<string> { "Clothes", "Electronics", " Food & Groceries", " Other" };
 		public ExpensesController(AppDbContext db, UserManager<User> userManager, IConfiguration configuration)
 		{
 			this.db = db;
 			this.userManager = userManager;
-			_configuration = configuration;
+			this.configuration = configuration;
 		}
 	}
 }

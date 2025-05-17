@@ -1,6 +1,7 @@
 ﻿using Azure;
 using gp.Models;
 using Graduation_Project.DTO;
+using Graduation_Project.Helping_Functions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -16,28 +17,23 @@ namespace Graduation_Project.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-	public class MonthlyBillController : ControllerBase
+	public class MonthlyBillController : BaseController
 	{
 		private readonly IConfiguration _configuration;
 		AppDbContext db;
 		UserManager<User> userManager;
-		List<string> AllowedCategories = new List<string> { "Clothes", "Electronics", " Food & Groceries", " Other" };
-		public MonthlyBillController(AppDbContext db, UserManager<User> userManager, IConfiguration configuration)
+		public MonthlyBillController(AppDbContext db, UserManager<User> userManager, IConfiguration configuration,IEmailService emailService):base(db, emailService)
 		{
 			this.db = db;
 			this.userManager = userManager;
 			_configuration = configuration;
 		}
 		[Authorize]
-		[HttpGet("User/expenses/Total")]
-		public async Task<ActionResult<decimal>> GetTotalExpenses()
+		[HttpGet("MonthlyBills/Total")]
+		public async Task<ActionResult<decimal>> GetTotalMonthlyBills()
 		{
 			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
-			var date = new DateTime(DateTime.UtcNow.Month);
-
-			var TotalBills = await db.MonthlyBills
-		.Where(p => p.UserId == user.Id && date >= p.StartDate && date <= p.EndDate)
-		.SumAsync(p => p.Amount);
+			double TotalBills =await CalculateTotalMonthlyBillsByuser(user);
 			return Ok(TotalBills);
 		}
 	}
