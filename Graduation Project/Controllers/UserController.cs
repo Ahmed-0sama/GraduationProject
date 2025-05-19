@@ -51,7 +51,7 @@ namespace gp.Controllers
 				{
 					Expense expense = new Expense
 					{
-						UserId = user.Id
+						userId = user.Id
 					};
 
 					db.Expenses.Add(expense);

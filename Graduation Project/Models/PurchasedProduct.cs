@@ -25,7 +25,7 @@ public class PurchasedProduct
     public string ItemName { get; set; }
 
     public string? ReceiptImage { get; set; }
-
+    [ForeignKey("ExpenseId")]
 	public int ExpenseId { get; set; }
 	public virtual Expense Expense { get; set; }
 	public int ? bestpriceproductId { get; set; }

@@ -22,8 +22,8 @@ namespace Graduation_Project.Controllers
 		private readonly IConfiguration _configuration;
 		AppDbContext db;
 		UserManager<User> userManager;
-		List<string> AllowedCategories = new List<string> { "Clothes","Electronics","Food & Groceries"," Other" };
-		public PurchasedProductController(AppDbContext db, UserManager<User> userManager, IConfiguration configuration,IEmailService emailService):base(db, emailService)
+		List<string> AllowedCategories = new List<string> { "Clothes", "Electronics", "Food & Groceries", " Other" };
+		public PurchasedProductController(AppDbContext db, UserManager<User> userManager, IConfiguration configuration, IEmailService emailService) : base(db, emailService)
 		{
 			this.db = db;
 			this.userManager = userManager;
@@ -35,7 +35,7 @@ namespace Graduation_Project.Controllers
 		{
 			if (ModelState.IsValid)
 			{
-				if(!AllowedCategories.Contains(model.Category))
+				if (!AllowedCategories.Contains(model.Category))
 				{
 					return BadRequest("Invalid category");
 				}
@@ -45,7 +45,7 @@ namespace Graduation_Project.Controllers
 					return NotFound("User not found");
 				}
 				var expense = await db.Expenses
-				.Where(e => e.UserId == user.Id)
+				.Where(e => e.userId == user.Id)
 				.FirstOrDefaultAsync();
 				PurchasedProduct product = new PurchasedProduct
 				{
@@ -56,10 +56,11 @@ namespace Graduation_Project.Controllers
 					Price = model.Price,
 					Quantity = model.Quantity,
 					ShopName = model.ShopName,
-					ExpenseId=expense.ExpenseId
+					ExpenseId = expense.ExpenseId
 				};
 				db.PurchasedProducts.Add(product);
 				db.SaveChanges();
+				await TrackSpendingGoal(user);
 				return Ok("Product added successfully");
 			}
 			return BadRequest(ModelState);
@@ -73,12 +74,13 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("User not found");
 			}
-			List<PurchasedProduct>products = db.PurchasedProducts.Where(p => p.UserId == user.Id).ToList();
-			List<PurchasedProductDTO>purchaseddto= new List<PurchasedProductDTO>();
+			List<PurchasedProduct> products = db.PurchasedProducts.Where(p => p.UserId == user.Id).ToList();
+			List<PurchasedProductDTO> purchaseddto = new List<PurchasedProductDTO>();
 			foreach (var product in products)
 			{
 				purchaseddto.Add(new PurchasedProductDTO
 				{
+					id = product.NewPurchasedId,
 					ProductName = product.ItemName,
 					Category = product.Category,
 					Date = product.Date,
@@ -91,7 +93,7 @@ namespace Graduation_Project.Controllers
 		}
 		[Authorize]
 		[HttpDelete("DeletePurchasedProduct")]
-		public async Task<IActionResult>DeletePurchasedProduct(int id)
+		public async Task<IActionResult> DeletePurchasedProduct(int id)
 		{
 			var product = db.PurchasedProducts.Find(id);
 			if (product == null)
@@ -104,7 +106,7 @@ namespace Graduation_Project.Controllers
 		}
 		[Authorize]
 		[HttpPut("UpdatePurchasedProduct")]
-		public async Task<IActionResult>updateProduct(int id, PurchasedProductDTO model)
+		public async Task<IActionResult> updateProduct(int id, PurchasedProductDTO model)
 		{
 			var product = db.PurchasedProducts.Find(id);
 			if (product == null)
@@ -124,11 +126,11 @@ namespace Graduation_Project.Controllers
 		[HttpGet("GetPurchasedProductByDateRange")]
 		public async Task<IActionResult> GetPurchasedProductByDate(DateOnly startDate, DateOnly EndDate)
 		{
-			if(startDate > EndDate)
+			if (startDate > EndDate)
 			{
 				return BadRequest("Invalid date range");
 			}
-			if(startDate == null || EndDate == null)
+			if (startDate == null || EndDate == null)
 			{
 				return BadRequest("Invalid date range");
 			}
@@ -187,11 +189,11 @@ namespace Graduation_Project.Controllers
 		[HttpGet("GetPurchasedProductByShop")]
 		public IActionResult GetProductByShop(string shopname)
 		{
-			if (shopname==null)
+			if (shopname == null)
 			{
 				return BadRequest("Shop name is required");
 			}
-			var user= userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)).Result;
+			var user = userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)).Result;
 			if (user == null)
 			{
 				return NotFound("User not found");
@@ -221,14 +223,14 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("User not found");
 			}
-			var total =await CalculateTotalPurchasedByUser(user);
+			var total = await CalculateTotalPurchasedByUser(user);
 
 			return Ok(total);
 		}
-		
+
 		[Authorize]
 		[HttpPost("AddReceipt")]
-		public async Task<IActionResult>uploadRecite(IFormFile formFile)
+		public async Task<IActionResult> uploadRecite(IFormFile formFile)
 		{
 			if (formFile == null || formFile.Length == 0)
 			{
@@ -323,7 +325,7 @@ namespace Graduation_Project.Controllers
 			var receiptDate = DateOnly.Parse(DateTime.Parse(root.GetProperty("receipt_date").GetString()!).ToShortDateString());
 			var itemsObj = root.GetProperty("items");
 			var expense = await db.Expenses
-				.Where(e => e.UserId == user.Id)
+				.Where(e => e.userId == user.Id)
 				.FirstOrDefaultAsync();
 			if (expense.ExpenseId == null)
 			{
@@ -352,6 +354,37 @@ namespace Graduation_Project.Controllers
 				}
 			}
 			return Ok("Receipt items saved successfully.");
+		}
+		[Authorize]
+		[HttpDelete("DeletePurchacedProductWithExpensess{id}")]
+		public async Task<IActionResult> DeletePurchacedProductWithExpensess(int id)
+		{
+			var Product = await db.PurchasedProducts
+				.Include(p => p.Expense)
+				.FirstOrDefaultAsync(p => p.NewPurchasedId == id);
+			if (Product == null)
+			{
+				return NotFound("this product not found");
+			}
+			else
+			{
+				int expensesId = Product.ExpenseId;
+				db.PurchasedProducts.Remove(Product);
+				await db.SaveChangesAsync();
+				bool HasOtherProduct = await db.PurchasedProducts
+					.AnyAsync(p => p.ExpenseId == expensesId);
+				if (!HasOtherProduct)
+				{
+					var expense = await db.Expenses.FindAsync(expensesId);
+					if (expense != null)
+					{
+						db.Expenses.Remove(expense);
+						await db.SaveChangesAsync();
+					}
+				}
+				return NoContent();
+			}
+
 		}
 	}
 }

@@ -37,7 +37,7 @@ public partial class AppDbContext : IdentityDbContext<User>
 		modelBuilder.Entity<Expense>()
 		.HasOne(e => e.User)
 		.WithOne(u => u.Expense)
-		.HasForeignKey<Expense>(e => e.UserId)
+		.HasForeignKey<Expense>(e => e.userId)
 		.OnDelete(DeleteBehavior.Cascade);
 
 		modelBuilder.Entity<ToBuyList>()

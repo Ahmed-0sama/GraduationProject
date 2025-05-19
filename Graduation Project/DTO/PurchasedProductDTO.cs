@@ -2,6 +2,7 @@
 {
 	public class PurchasedProductDTO
 	{
+		public int id { get; set; }
 		public string ProductName { get; set; }
 		public string Category { get; set; }
 		public DateOnly Date { get; set; }

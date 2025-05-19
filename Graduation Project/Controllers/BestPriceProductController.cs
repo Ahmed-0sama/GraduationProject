@@ -167,7 +167,7 @@ namespace Graduation_Project.Controllers
 				return NotFound("Product not found");
 			}
 			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
-			var expenses= await db.Expenses.SingleOrDefaultAsync(e => e.UserId == user.Id);
+			var expenses= await db.Expenses.SingleOrDefaultAsync(e => e.userId == user.Id);
 			if (user == null)
 			{
 				return NotFound("User not found");
