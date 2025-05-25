@@ -97,7 +97,7 @@ namespace Graduation_Project.Services
 		}
 		public string RunPythonScript(string productUrl)
 		{
-			string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "webscrapping", "PriceScrappingService.py");
+			string scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "webscrapping", "PriceScrappingService.py");
 
 			ProcessStartInfo psi = new ProcessStartInfo
 			{

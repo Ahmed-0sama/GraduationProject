@@ -14,9 +14,9 @@ namespace Graduation_Project.Services
 			public async Task StartScraping(string name, int listid,string category)
 			{
 				string searchQuery = name;
-				string pythonScriptPath = @"D:\enviroment\Graduation Project\Graduation Project\webscrapping\NoonScrapping.py";
+				string pythonScriptPath = Path.Combine(Directory.GetCurrentDirectory(), "webscrapping", "NoonScrapping.py");
 
-				ProcessStartInfo psi = new ProcessStartInfo
+			ProcessStartInfo psi = new ProcessStartInfo
 				{
 					FileName = "py",
 					Arguments = $"\"{pythonScriptPath}\" \"{searchQuery}\"",

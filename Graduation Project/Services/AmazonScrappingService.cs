@@ -16,7 +16,7 @@ namespace Graduation_Project.Services
 		public async Task StartScraping(string name,int listid,string category)
 		{
 			string searchQuery = name;
-			string pythonScriptPath = @"D:\enviroment\Graduation Project\Graduation Project\webscrapping\amazon.py";
+			string pythonScriptPath = Path.Combine(Directory.GetCurrentDirectory(), "webscrapping", "amazon.py");
 
 			ProcessStartInfo psi = new ProcessStartInfo
 			{
