@@ -4,17 +4,19 @@ using System.Diagnostics;
 
 namespace Graduation_Project.Services
 {
-	public class NoonScrappingService
+	public class JumiaScrappingService
+
 	{
 			private readonly AppDbContext db;
-			public NoonScrappingService(AppDbContext db)
+			public JumiaScrappingService(AppDbContext db)
 			{
 				this.db = db;
 			}
+
 			public async Task StartScraping(string name, int listid,string category)
 			{
 				string searchQuery = name;
-				string pythonScriptPath = @"D:\enviroment\Graduation Project\Graduation Project\webscrapping\NoonScrapping.py";
+				string pythonScriptPath = Path.Combine(Directory.GetCurrentDirectory(), "webscrapping", "JumiaScrapping.py"); 
 
 				ProcessStartInfo psi = new ProcessStartInfo
 				{
@@ -43,9 +45,8 @@ namespace Graduation_Project.Services
 						{
 							Console.WriteLine("Python Error: " + errors);
 						}
-					Console.WriteLine("Python Output:");
-					Console.WriteLine(output);
-					if (!string.IsNullOrWhiteSpace(output))
+
+						if (!string.IsNullOrWhiteSpace(output))
 						{
 							List<pythonProduct> products = new List<pythonProduct>();
 							products = JsonConvert.DeserializeObject<List<pythonProduct>>(output);
@@ -56,9 +57,9 @@ namespace Graduation_Project.Services
 								pro.Url = product.Link;
 								pro.Category = category;
 								pro.CurrentDate = DateOnly.FromDateTime(DateTime.UtcNow);
-								pro.ShopName = "Noon";
+								pro.ShopName = "Jumia";
 								//pro.IsBought = false;
-								pro.CurrentPrice = Convert.ToDouble(product.Price.Replace("EGP", "").Replace("\n", "").Trim());
+								pro.CurrentPrice = Convert.ToDouble(product.Price.Replace("EGP", "").Trim());
 								pro.Image = product.Image;
 								pro.ToBuyListID = listid;
 								await db.BestPriceProducts.AddAsync(pro);
@@ -81,3 +82,4 @@ namespace Graduation_Project.Services
 			}
 	}
 }
+
