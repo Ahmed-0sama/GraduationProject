@@ -298,5 +298,20 @@ namespace gp.Controllers
 			}
 			return BadRequest(result.Errors);
 		}
+		[HttpGet("User Information")]
+		public async Task<IActionResult> GetUserInformation()
+		{
+			var user = await userManager.FindByIdAsync(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			userinformationdto userdto = new userinformationdto();
+			userdto.FirstName = user.FirstName;
+			userdto.lastName = user.lastName;
+			userdto.Photo = user.Photo;
+			return Ok(userdto);
+		}
+
 	}
 }
