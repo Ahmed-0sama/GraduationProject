@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Graduation_Project.Controllers
 {
@@ -43,8 +44,6 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("User Not Found");
 			}
-
-			// Get user's purchased products
 			var purchased = await db.PurchasedProducts
 				.Where(u => u.UserId == user.Id)
 				.Select(p => new PurchasedProductDTO
@@ -57,11 +56,9 @@ namespace Graduation_Project.Controllers
 					ShopName = p.ShopName
 				})
 				.ToListAsync();
-
-			// Get user's monthly bills
 			var bills = await db.MonthlyBills
 				.Where(m => m.UserId == user.Id)
-				.Select(m => new returnMonthlybills
+				.Select(m => new ReturnMonthlyBills
 				{
 					Name = m.Name,
 					Issuer = m.Issuer,
@@ -158,13 +155,10 @@ namespace Graduation_Project.Controllers
 				{
 					var reply = textElement.GetString();
 
-					// Add AI model reply to chat history
 					history.Add(new MessageEntry { Role = "model", Text = reply });
 
-					// Save updated history
 					ChatHistoryStore.Histories[request.SessionId] = history;
 
-					// Return AI reply and updated history
 					return Ok(new { reply, history });
 				}
 				else
@@ -176,6 +170,95 @@ namespace Graduation_Project.Controllers
 			{
 				return BadRequest(new { error = "Exception while parsing response", ex.Message, raw = responseString });
 			}
+		}
+		[Authorize]
+		[HttpGet("getaisuggestionforfinancial")]
+		public async Task<IActionResult> getaisuggestionforfinancial(int salary)
+		{
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			var user = await userManager.FindByIdAsync(userId);
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			var purchased = await db.PurchasedProducts
+				.Where(u => u.UserId == user.Id)
+				.Select(p => new PurchasedProductDTO
+				{
+					ProductName = p.ItemName,
+					Category = p.Category,
+					Date = p.Date,
+					Price = p.Price,
+					Quantity = p.Quantity,
+					ShopName = p.ShopName
+				})
+				.ToListAsync();
+			var bills = await db.MonthlyBills
+				.Where(m => m.UserId == user.Id)
+				.Select(m => new ReturnMonthlyBills
+				{
+					Name = m.Name,
+					Issuer = m.Issuer,
+					Category = m.Category,
+					Amount = m.Amount,
+					Duration = m.Duration,
+					StartDate = m.StartDate,
+					EndDate = m.EndDate
+				})
+				.ToListAsync();
+			var prompt = @$"
+				A user earns a salary of {salary} in egyptian money and its my salary in month.
+
+				Here is their recent purchase history:
+				{JsonSerializer.Serialize(purchased, new JsonSerializerOptions { WriteIndented = true })}
+
+				Here are their monthly bills:
+				{JsonSerializer.Serialize(bills, new JsonSerializerOptions { WriteIndented = true })}
+
+				Based on this data, suggest the best financial goals they can work toward. Be practical, realistic, and data-driven.
+				 make it in 5-8 lines only and tell me specific financial goal to save each month";
+			var requestPayload = new
+			{
+				contents = new[]
+				{
+					new
+					{
+				parts = new object[]
+				{
+					new { text = prompt }
+				}
+					}
+				}
+			};
+
+			var geminiApiKey = configuration["GeminiApi:geminiApiKey"];
+
+			using var client = new HttpClient();
+			var requestJson = JsonSerializer.Serialize(requestPayload);
+			var httpContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+			var response = await client.PostAsync(
+				$"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={geminiApiKey}",
+				httpContent
+			);
+
+			if (!response.IsSuccessStatusCode)
+			{
+				var error = await response.Content.ReadAsStringAsync();
+				return StatusCode((int)response.StatusCode, new { error = "Gemini API error", details = error });
+			}
+
+			var jsonResponse = await response.Content.ReadAsStringAsync();
+			var geminiResponse = JsonDocument.Parse(jsonResponse);
+
+			var replyText = geminiResponse.RootElement
+				.GetProperty("candidates")[0]
+				.GetProperty("content")
+				.GetProperty("parts")[0]
+				.GetProperty("text")
+				.GetString();
+
+			return Ok(new { suggestion = replyText });
 		}
 	}
 }

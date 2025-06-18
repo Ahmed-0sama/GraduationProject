@@ -44,7 +44,7 @@ namespace gp.Controllers
 					Email = registerfromform.Email,
 					UserName = registerfromform.Email,
 					RefreshToken = TokenRequest.GenerateRefreshToken(),
-					RefreshTokenExpirytime = DateTime.Now.AddDays(7)
+					RefreshTokenExpirytime = DateTime.UtcNow.AddDays(7)
 				};
 				IdentityResult result = await userManager.CreateAsync(user, registerfromform.Password);
 				if (result.Succeeded)
@@ -88,21 +88,23 @@ namespace gp.Controllers
 						{
 							userClaims.Add(new Claim(ClaimTypes.Role, role));
 						}
-						var secretKey = configuration["JWT:key"];
-						var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:key"]));
-						var singinCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+						var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
+						var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 						var token = new JwtSecurityToken(
-							issuer: configuration["JWT:Issuer"],
-							audience: configuration["JWT:Audience"],
+							issuer: configuration["Jwt:Issuer"],
+							audience: configuration["Jwt:Audience"],
 							claims: userClaims,
-							expires: DateTime.Now.AddDays(30),
-							signingCredentials: singinCredentials
+							expires: DateTime.UtcNow.AddMinutes(30),
+							signingCredentials: creds
 						);
+
 						var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+
 						string refreshToken = TokenRequest.GenerateRefreshToken();
 						userdb.RefreshToken = refreshToken;
-						userdb.RefreshTokenExpirytime = DateTime.Now.AddDays(7);
+						userdb.RefreshTokenExpirytime = DateTime.UtcNow.AddDays(7); 
 						await userManager.UpdateAsync(userdb);
+
 						return Ok(new
 						{
 							token = accessToken,
@@ -110,8 +112,8 @@ namespace gp.Controllers
 							refreshToken = refreshToken
 						});
 					}
-					ModelState.AddModelError("UserName", "Invalid UserName or Password");
 				}
+				ModelState.AddModelError("UserName", "Invalid UserName or Password");
 			}
 			return BadRequest(ModelState);
 		}
@@ -122,11 +124,12 @@ namespace gp.Controllers
 			{
 				return BadRequest("Invalid token request");
 			}
+
 			var principal = TokenRequest.GetPrincipalFromExpiredToken(
 			refreshTokenDTO.AccessToken,
-			configuration["JWT:Key"],
-			configuration["JWT:Issuer"],
-			configuration["JWT:Audience"]
+			configuration["Jwt:Key"],
+			configuration["Jwt:Issuer"],
+			configuration["Jwt:Audience"]
 			);
 			if (principal == null)
 			{
@@ -135,31 +138,41 @@ namespace gp.Controllers
 
 			var username = principal.Identity?.Name;
 			var userdb = await userManager.FindByNameAsync(username);
-			if (userdb == null || userdb.RefreshTokenExpirytime <= DateTime.Now)
+
+			// Fixed: Added refresh token validation and changed to UtcNow
+			if (userdb == null || userdb.RefreshToken != refreshTokenDTO.RefreshToken || userdb.RefreshTokenExpirytime <= DateTime.UtcNow)
 			{
 				return Unauthorized("Invalid or expired refresh token");
 			}
+
 			var userClaims = new List<Claim>
 			{
 				new Claim (JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString()),
 				new Claim(ClaimTypes.NameIdentifier,userdb.Id),
 				new Claim(ClaimTypes.Name,userdb.UserName)
 			};
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"]));
+			var userRoles = await userManager.GetRolesAsync(userdb);
+			foreach (var role in userRoles)
+			{
+				userClaims.Add(new Claim(ClaimTypes.Role, role));
+			}
+
+			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
 			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
 			var newToken = new JwtSecurityToken(
-			issuer: configuration["JWT:Issuer"],
-			audience: configuration["JWT:Audience"],
-			claims: userClaims,
-			expires: DateTime.Now.AddMinutes(30),
-			signingCredentials: creds
+				issuer: configuration["Jwt:Issuer"],
+				audience: configuration["Jwt:Audience"],
+				claims: userClaims,
+				expires: DateTime.UtcNow.AddMinutes(30),
+				signingCredentials: creds
 			);
 
 			var newAccessToken = new JwtSecurityTokenHandler().WriteToken(newToken);
 
 			string newRefreshToken = TokenRequest.GenerateRefreshToken();
 			userdb.RefreshToken = newRefreshToken;
-			userdb.RefreshTokenExpirytime = DateTime.Now.AddDays(7);
+			userdb.RefreshTokenExpirytime = DateTime.UtcNow.AddDays(7); // Fixed: Changed to UtcNow
 			await userManager.UpdateAsync(userdb);
 
 			return Ok(new
@@ -297,6 +310,19 @@ namespace gp.Controllers
 				return Ok("User Assigned Admin Role Successfully");
 			}
 			return BadRequest(result.Errors);
+		}
+		[HttpGet("UserInformation")]
+		public async Task<IActionResult> GetUserInformation()
+		{
+			var user = await userManager.FindByIdAsync(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			userinformationdto userdto = new userinformationdto();
+			userdto.FirstName = user.FirstName;
+			userdto.lastName = user.lastName;
+			return Ok(userdto);
 		}
 	}
 }

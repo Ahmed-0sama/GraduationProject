@@ -55,8 +55,13 @@ public partial class AppDbContext : IdentityDbContext<User>
 			.HasOne(ut => ut.ToBuyList)
 			.WithMany(tl => tl.UserToBuyLists)
 			.HasForeignKey(ut => ut.ToBuyListId);
+		//adding indexing
+		modelBuilder.Entity<MonthlyBill>()
+		.HasIndex(b => new { b.UserId, b.EndDate });
 
-		// One-to-Many between ToBuyLists and BestPriceProducts
+		modelBuilder.Entity<PurchasedProduct>()
+			.HasIndex(p => new { p.UserId, p.Date });
+
 		modelBuilder.Entity<BestPriceProduct>()
 			.HasOne(bp => bp.ToBuyList)
 			.WithMany(tl => tl.BestPriceProducts)

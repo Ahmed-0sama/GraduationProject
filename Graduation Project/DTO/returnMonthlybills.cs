@@ -1,6 +1,6 @@
 ﻿namespace Graduation_Project.DTO
 {
-	public class returnMonthlybills
+	public class ReturnMonthlyBills
 	{
 		public string? Name { get; set; }
 

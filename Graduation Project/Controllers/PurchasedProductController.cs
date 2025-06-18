@@ -353,6 +353,7 @@ namespace Graduation_Project.Controllers
 					await db.SaveChangesAsync();
 				}
 			}
+			await TrackSpendingGoal(user);
 			return Ok("Receipt items saved successfully.");
 		}
 		[Authorize]

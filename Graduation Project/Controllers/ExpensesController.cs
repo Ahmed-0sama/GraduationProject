@@ -27,7 +27,6 @@ namespace Graduation_Project.Controllers
 			this.userManager = userManager;
 			this.configuration = configuration;
 		}
-		[Authorize]
 		[HttpGet("GetTotalExpenses")]
 		public async Task<IActionResult> GetTotalExpenses()
 		{
@@ -36,18 +35,29 @@ namespace Graduation_Project.Controllers
 			{
 				return NotFound("user not found");
 			}
-			var CurrentMonth = DateTime.UtcNow.Month;
-			var CurrentYear = DateTime.UtcNow.Year;
-			decimal TotalSpending = await db.PurchasedProducts
-				.Where(p => p.UserId == user.Id && p.Date.Month == CurrentMonth && p.Date.Year == CurrentYear)
+
+			var currentMonth = DateTime.UtcNow.Month;
+			var currentYear = DateTime.UtcNow.Year;
+			var monthStart = new DateTime(currentYear, currentMonth, 1);
+			var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+			decimal totalSpending = await db.PurchasedProducts
+				.Where(p => p.UserId == user.Id &&
+							p.Date.Month == currentMonth &&
+							p.Date.Year == currentYear)
 				.SumAsync(p => (decimal)(p.Price * p.Quantity));
-			var MonthStart = new DateTime(CurrentYear, CurrentMonth, 1);
-			var MonthEnd = MonthStart.AddMonths(1).AddDays(-1);
-			decimal TotalBills = await db.MonthlyBills
-				.Where(b => b.UserId == user.Id && MonthStart >= b.StartDate && MonthStart <= b.EndDate)
+
+			decimal totalBills = await db.MonthlyBills
+				.Where(b => b.UserId == user.Id &&
+							b.EndDate >= monthStart &&
+							b.StartDate <= monthEnd)
 				.SumAsync(b => (decimal)b.Amount);
-			decimal TotalExpenses = TotalSpending + TotalBills;
-			return Ok(TotalExpenses);
+			return Ok(new
+			{
+				TotalSpending = totalSpending,
+				TotalBills = totalBills,
+				TotalExpenses = totalSpending + totalBills
+			});
 		}
 		[Authorize]
 		[HttpGet("GetAllExpenses")]
@@ -124,5 +134,180 @@ namespace Graduation_Project.Controllers
 				return Ok(HasExpenses);
 			}
 		}
+		[Authorize]
+		[HttpGet("lastSevenMonthes")]
+		public async Task<IActionResult> lastsevenmonthes()
+		{
+			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			var currentDate = DateTime.UtcNow.Date;
+			var monthCutoff = new DateTime(currentDate.AddMonths(-6).Year, currentDate.AddMonths(-6).Month, 1);
+			var cutoffDateOnly = DateOnly.FromDateTime(monthCutoff);
+			var allBills = await db.MonthlyBills
+				.Where(b => b.UserId == user.Id && b.EndDate > monthCutoff)
+				.ToListAsync();
+
+			var allProducts = await db.PurchasedProducts
+				.Where(p => p.UserId == user.Id && p.Date >= cutoffDateOnly)
+				.ToListAsync();
+
+			var result = new List<object>();
+
+			for (int i = 0; i < 7; i++)
+			{
+				var monthDate = currentDate.AddMonths(-i);
+				var monthStart = new DateTime(monthDate.Year, monthDate.Month, 1);
+				var monthEnd = monthStart.AddMonths(1);
+
+				var startDateOnly = DateOnly.FromDateTime(monthStart);
+				var endDateOnly = DateOnly.FromDateTime(monthEnd);
+
+				var monthBills = allBills
+					.Where(b => b.StartDate < monthEnd && b.EndDate > monthStart)
+					.Sum(b => b.Amount);
+
+				var monthProducts = allProducts
+					.Where(p => p.Date >= startDateOnly && p.Date < endDateOnly)
+					.Sum(p => p.Price);
+
+				result.Add(new
+				{
+					Month = monthStart.ToString("yyyy-MM"),
+					Total = monthBills + monthProducts
+				});
+			}
+			var sorted = result
+				.Cast<dynamic>()
+				.OrderBy(r => r.Month)
+				.ToList();
+
+			return Ok(sorted);
+		}
+		[Authorize]
+		[HttpGet("lastSevenMonthsWithCategories")]
+		public async Task<IActionResult> lastSevenMonthsWithCategories()
+		{
+			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+			var currentDate = DateTime.UtcNow.Date;
+			var monthCutoff = new DateTime(currentDate.AddMonths(-6).Year, currentDate.AddMonths(-6).Month, 1);
+			var result = new List<dynamic>();
+			var cutoffDateOnly = DateOnly.FromDateTime(monthCutoff);
+
+			var allBills = await db.MonthlyBills
+				.Where(b => b.UserId == user.Id && b.EndDate > monthCutoff)
+				.ToListAsync();
+
+			var allProducts = await db.PurchasedProducts
+				.Where(p => p.UserId == user.Id && p.Date >= cutoffDateOnly)
+				.ToListAsync();
+
+			for (int i = 0; i < 7; i++)
+			{
+				var monthDate = currentDate.AddMonths(-i);
+				var monthStart = new DateTime(monthDate.Year, monthDate.Month, 1);
+				var monthEnd = monthStart.AddMonths(1);
+				var monthStartDateOnly = DateOnly.FromDateTime(monthStart);
+				var monthEndDateOnly = DateOnly.FromDateTime(monthEnd);
+
+				var bills = allBills
+					.Where(b => b.StartDate < monthEnd && b.EndDate > monthStart)
+					.ToList();
+				var billSum = bills.Sum(b => b.Amount);
+
+				var products = allProducts
+					.Where(p => p.Date >= monthStartDateOnly && p.Date < monthEndDateOnly)
+					.ToList();
+				var productSum = products.Sum(p => p.Price);
+
+				var billCategories = bills
+					.GroupBy(b => b.Category)
+					.ToDictionary(g => g.Key, g => g.Sum(b => b.Amount));
+
+				var productCategories = products
+					.GroupBy(p => p.Category)
+					.ToDictionary(g => g.Key, g => g.Sum(p => p.Price));
+
+				result.Add(new
+				{
+					Month = monthStart.ToString("yyyy-MM"),
+					BillSum = billSum,
+					ProductSum = productSum,
+					Total = billSum + productSum,
+					BillsCategory = billCategories,
+					ProductsCategory = productCategories
+				});
+			}
+			return Ok(result.OrderBy(r => r.Month));
+		
+		}
+		[Authorize]
+		[HttpGet("lastSevenDaysWithCategories")]
+		public async Task<IActionResult> LastSevenDaysWithCategories()
+		{
+			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+
+			var currentDate = DateTime.UtcNow.Date;
+			var dayCutoff = currentDate.AddDays(-6);
+			var result = new List<dynamic>();
+
+			var allBills = await db.MonthlyBills
+				.Where(b => b.UserId == user.Id && b.EndDate >= dayCutoff)
+				.ToListAsync();
+
+			var allProducts = await db.PurchasedProducts
+				.Where(p => p.UserId == user.Id && p.Date >= DateOnly.FromDateTime(dayCutoff))
+				.ToListAsync();
+
+			for (int i = 0; i < 7; i++)
+			{
+				var day = currentDate.AddDays(-i);
+				var dayStart = day;
+				var dayEnd = day.AddDays(1);
+				var dayStartDateOnly = DateOnly.FromDateTime(dayStart);
+				var dayEndDateOnly = DateOnly.FromDateTime(dayEnd);
+
+				var bills = allBills
+					.Where(b => b.StartDate <= dayEnd && b.EndDate >= dayStart)
+					.ToList();
+				var billSum = bills.Sum(b => b.Amount);
+
+				var products = allProducts
+					.Where(p => p.Date >= dayStartDateOnly && p.Date < dayEndDateOnly)
+					.ToList();
+				var productSum = products.Sum(p => p.Price);
+
+				var billCategories = bills
+					.GroupBy(b => b.Category)
+					.ToDictionary(g => g.Key, g => g.Sum(b => b.Amount));
+
+				var productCategories = products
+					.GroupBy(p => p.Category)
+					.ToDictionary(g => g.Key, g => g.Sum(p => p.Price));
+
+				result.Add(new
+				{
+					Day = day.ToString("yyyy-MM-dd"),
+					BillSum = billSum,
+					ProductSum = productSum,
+					Total = billSum + productSum,
+					BillsCategory = billCategories,
+					ProductsCategory = productCategories
+				});
+			}
+
+			return Ok(result.OrderBy(r => r.Day));
+		}
 	}
+
 }

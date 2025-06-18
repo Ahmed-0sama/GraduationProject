@@ -8,32 +8,43 @@ using System.Threading.Tasks;
 public class PriceCheckBackgroundService : BackgroundService
 {
 	private readonly IServiceProvider _serviceProvider;
+	private readonly ILogger<PriceCheckBackgroundService> _logger;
+	private readonly TimeSpan _period = TimeSpan.FromHours(24);
 
-	public PriceCheckBackgroundService(IServiceProvider serviceProvider)
+	public PriceCheckBackgroundService(IServiceProvider serviceProvider, ILogger<PriceCheckBackgroundService> logger)
 	{
 		_serviceProvider = serviceProvider;
+		_logger = logger;
 	}
-
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		using (var scope = _serviceProvider.CreateScope())
+		// Run immediately on startup
+		await RunPriceCheck();
+
+		// Then run periodically
+		using var timer = new PeriodicTimer(_period);
+
+		while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
 		{
-			var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
-			await priceCheckService.checkandupdate(); 
+			await RunPriceCheck();
 		}
+	}
 
-		Console.WriteLine("Price check completed. Waiting for next run...");
-		while (!stoppingToken.IsCancellationRequested)
+	private async Task RunPriceCheck()
+	{
+		try
 		{
-			using (var scope = _serviceProvider.CreateScope())
-			{
-				var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
-				await priceCheckService.checkandupdate();
-			}
+			using var scope = _serviceProvider.CreateScope();
+			var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
 
-			Console.WriteLine("Price check completed. Waiting for next run...");
-			await Task.Delay(TimeSpan.FromHours(24), stoppingToken); 
+			_logger.LogInformation("Starting price check at {Time}", DateTime.UtcNow);
+			await priceCheckService.checkandupdate();
+			_logger.LogInformation("Price check completed successfully at {Time}", DateTime.UtcNow);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Error occurred during price check at {Time}", DateTime.UtcNow);
 		}
 	}
 }

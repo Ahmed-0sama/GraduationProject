@@ -4,46 +4,66 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Database Context
 builder.Services.AddDbContext<AppDbContext>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register your services
 builder.Services.AddScoped<AmazonScrappingService>();
 builder.Services.AddScoped<NoonScrappingService>();
 builder.Services.AddScoped<JumiaScrappingService>();
 builder.Services.AddScoped<EveryDayPriceCheackService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpClient();
+
+// Register background service (ONLY ONCE!)
 builder.Services.AddHostedService<PriceCheckBackgroundService>();
+
+// Identity configuration
 builder.Services.AddIdentity<User, IdentityRole>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
-builder.Services.AddHttpClient();
+
+// JWT Configuration
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"]));
+
 builder.Services.AddAuthentication(options =>
 {
 	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-	options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;//unauthorized
+	options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 	options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
+})
+.AddJwtBearer(options =>
 {
 	options.SaveToken = true;
-	options.RequireHttpsMetadata = false;
-	options.TokenValidationParameters = new TokenValidationParameters()
+	options.RequireHttpsMetadata = false; // Set to true in production
+	options.TokenValidationParameters = new TokenValidationParameters
 	{
-		ValidateIssuer = false,
-		ValidateAudience = false,
+		ValidateIssuer = true,
+		ValidateAudience = true,
 		ValidateLifetime = true,
 		ValidateIssuerSigningKey = true,
-		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+		IssuerSigningKey = key,
+		ValidIssuer = jwtSection["Issuer"],
+		ValidAudience = jwtSection["Audience"],
+		RoleClaimType = ClaimTypes.Role,
+		ClockSkew = TimeSpan.Zero // Remove default 5 minute tolerance
 	};
 });
+
+// Swagger configuration with JWT support
 builder.Services.AddSwaggerGen(options =>
 {
 	options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -53,7 +73,7 @@ builder.Services.AddSwaggerGen(options =>
 		Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
 		Scheme = "Bearer",
 		BearerFormat = "JWT",
-		Description = "Enter 'Bearer' then add space and then your token"
+		Description = "Enter 'Bearer' followed by a space and your JWT token"
 	});
 
 	options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -71,30 +91,30 @@ builder.Services.AddSwaggerGen(options =>
 		}
 	});
 });
-//var scopeFactory = builder.Services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
-//Task.Run(async () =>
-//{
-//	while (true)
-//	{
-//		using (var scope = scopeFactory.CreateScope())
-//		{
-//			var priceCheckService = scope.ServiceProvider.GetRequiredService<EveryDayPriceCheackService>();
-//			await priceCheckService.checkandupdate();
-//		}
 
-//		Console.WriteLine("Price check completed. Waiting for next run...");
-//		await Task.Delay(TimeSpan.FromHours(24)); // Runs every 24 hours
-//	}
-//});
-var app = builder.Build();
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// CORS configuration
+builder.Services.AddCors(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+	options.AddDefaultPolicy(policy =>
+	{
+		policy.AllowAnyOrigin()
+			  .AllowAnyHeader()
+			  .AllowAnyMethod();
+	});
+});
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+// CORS must come before authentication
+app.UseCors();
+
+// Authentication and Authorization middleware (ORDER MATTERS!)
 app.UseAuthentication();
 app.UseAuthorization();
 

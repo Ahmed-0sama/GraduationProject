@@ -37,34 +37,32 @@ namespace Graduation_Project.Controllers
 			return Ok(TotalBills);
 		}
 		[Authorize]
-		[HttpGet("GetBills")]
-		public async Task<ActionResult<IEnumerable<MonthlyBill>>> GetBills()
-		{
-			return await db.MonthlyBills.ToListAsync();
-		}
-		[Authorize]
 		[HttpGet("GetMonthlyBillsForUser")]
 		public async Task<IActionResult> GetMonthlyBillsForUser()
 		{
-			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userId))
+				return Unauthorized("User ID not found in token.");
+
+			var user = await userManager.FindByIdAsync(userId);
 			if (user == null)
+				return NotFound("User not found");
+
+			var bills = await db.MonthlyBills
+				.Where(p => p.UserId == user.Id)
+				.ToListAsync();
+
+			var dtoList = bills.Select(item => new ReturnMonthlyBills
 			{
-				return NotFound("User Not Found");
-			}
-			var bills = await db.MonthlyBills.Where(p => p.UserId == user.Id).ToListAsync();
-			List<returnMonthlybills> dtoList = new List<returnMonthlybills>();
-			foreach(var item in bills)
-			{
-				var dto = new returnMonthlybills
-				{
-					Issuer = item.Issuer,
-					Name = item.Name,
-					StartDate = item.StartDate,
-					EndDate = item.EndDate,
-					Category = item.Category
-				};
-				dtoList.Add(dto);
-			}
+				Issuer = item.Issuer,
+				Name = item.Name,
+				StartDate = item.StartDate,
+				EndDate = item.EndDate,
+				Category = item.Category,
+				Amount = item.Amount,
+				Duration = item.Duration
+			}).ToList();
+
 			return Ok(dtoList);
 		}
 		[Authorize]
@@ -82,38 +80,124 @@ namespace Graduation_Project.Controllers
 			}
 		}
 		[Authorize]
+		[HttpGet("GetBills")]
+		public async Task<ActionResult<IEnumerable<MonthlyBill>>> GetBills()
+		{
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userId))
+				return Unauthorized("User ID not found in token.");
+
+			var user = await userManager.FindByIdAsync(userId);
+			if (user == null)
+				return NotFound("User not found");
+
+			var list = await db.MonthlyBills
+		.Where(u => u.UserId == user.Id)
+			.Select(b => new
+			{
+			b.Name,
+			b.Issuer,
+			b.Amount,
+			b.StartDate,
+			b.EndDate
+			})
+		.ToListAsync();
+
+			return Ok(list);
+		}
+		[Authorize]
 		[HttpPost]
 		public async Task<ActionResult<MonthlyBill>> CreateBill(AddMonthlyBill dto)
 		{
 			if (ModelState.IsValid)
 			{
-				var user= await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+				var user = await userManager.Users
+					.Include(u => u.Expense)
+					.FirstOrDefaultAsync(u => u.Id == User.FindFirstValue(ClaimTypes.NameIdentifier));
+
 				if (user == null)
 				{
 					return NotFound("User Not Found");
 				}
-				else
+
+				var expenses = await db.Expenses.FirstOrDefaultAsync(e => e.User.Id == user.Id);
+				if (expenses == null)
 				{
-					MonthlyBill bill = new MonthlyBill();
-					var expenses = await db.Expenses.FirstOrDefaultAsync(p => p.userId == user.Id);
-					bill.UserId = user.Id;
-					bill.ExpenseId = expenses.ExpenseId;
-					bill.Issuer = dto.Issuer;
-					bill.Amount = dto.Amount;
-					bill.StartDate = dto.StartDate;
-					bill.EndDate = dto.EndDate;
-					bill.Category = dto.Category;
-					bill.Duration = dto.Duration;
-					db.MonthlyBills.Add(bill);
-					db.SaveChanges();
-					await TrackSpendingGoal(user);
-					return Ok("item saved");
+					return BadRequest("No expenses found for user.");
 				}
+
+				MonthlyBill bill = new MonthlyBill
+				{
+					UserId = user.Id,
+					ExpenseId = expenses.ExpenseId,
+					Issuer = dto.Issuer,
+					Name=dto.Name,
+					Amount = dto.Amount,
+					StartDate = dto.StartDate,
+					EndDate = dto.EndDate,
+					Category = dto.Category,
+					Duration = dto.Duration
+				};
+
+				db.MonthlyBills.Add(bill);
+				await db.SaveChangesAsync();
+				await TrackSpendingGoal(user);
+
+				return Ok("Item saved");
 			}
-			else
+			return BadRequest(ModelState);
+		}
+		[Authorize]
+		[HttpGet("GetTotalBillsForLastMonth")]
+		public async Task<IActionResult> GetBillslastmonth()
+		{
+			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			if (user == null)
 			{
-				return NotFound(ModelState);
+				return NotFound("User Not Found");
 			}
+			var currentDate = DateTime.UtcNow;
+
+			var bills = await db.MonthlyBills
+			.Where(u => u.UserId == user.Id && u.StartDate < currentDate && u.EndDate > currentDate)
+			.ToListAsync();
+
+			var total = bills.Sum(b => b.Amount);
+
+			return Ok(new { Total = total });
+
+		}
+		[Authorize]
+		[HttpGet("GetLastMonthBillsWithCategories")]
+		public async Task<IActionResult> GetLastMonthBillsWithCategories()
+		{
+			var user = await userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+
+			var today = DateTime.UtcNow;
+			var lastMonth = today.AddMonths(-1);
+			var monthStart = new DateTime(lastMonth.Year, lastMonth.Month, 1);
+			var monthEnd = monthStart.AddMonths(1);
+
+			var bills = await db.MonthlyBills
+				.Where(b => b.UserId == user.Id && b.StartDate < monthEnd && b.EndDate > monthStart)
+				.ToListAsync();
+
+			var total = bills.Sum(b => b.Amount);
+
+			var billsByCategory = bills
+				.GroupBy(b => b.Category)
+				.ToDictionary(g => g.Key, g => g.Sum(b => b.Amount));
+
+			return Ok(new
+			{
+				Month = monthStart.ToString("yyyy-MM"),
+				Total = total,
+				Categories = billsByCategory
+			});
 		}
 		[Authorize]
 		[HttpPut("{id}")]
