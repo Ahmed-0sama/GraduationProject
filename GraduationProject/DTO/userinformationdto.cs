@@ -4,5 +4,6 @@
 	{
 		public string? FirstName { get; set; }
 		public string? lastName { get; set; }
+		public byte[]? Photo { get; set; }
 	}
 }
