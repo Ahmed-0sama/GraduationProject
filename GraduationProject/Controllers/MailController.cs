@@ -36,7 +36,7 @@ namespace Graduation_Project.Controllers
 				// Use Base64 encoding for better token handling
 				var encodedToken = Convert.ToBase64String(Encoding.UTF8.GetBytes(token));
 
-				var resetLink = $"{configuration["FrontendUrl"]}/reset-password?email={Uri.EscapeDataString(model.Email)}&token={Uri.EscapeDataString(encodedToken)}";
+				var resetLink = $"https://graduation-projectechofi.vercel.app/forgot-password?email={Uri.EscapeDataString(model.Email)}&token={Uri.EscapeDataString(encodedToken)}";
 
 				// Send professional email
 				await SendPasswordResetEmail(model.Email, resetLink, user.FirstName ?? "User");
