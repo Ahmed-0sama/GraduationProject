@@ -55,7 +55,9 @@ namespace Graduation_Project.Helping_Functions
 			var monthlyBills = await CalculateTotalMonthlyBillsByuser(user);
 			var total = totalSpending + monthlyBills;
 			decimal financialGoal = (decimal)user.financialGoal;
-			decimal percent = ((decimal)total / financialGoal) * 100;
+            decimal salary = (decimal)user.salary;
+            decimal diff = (salary - financialGoal);
+			decimal percent = ((decimal)total / diff) * 100;
 			Alert alert = null;
 
 			if (percent >= 100)
@@ -95,7 +97,7 @@ namespace Graduation_Project.Helping_Functions
 
 				// Generate HTML email content
 				string htmlContent = GenerateSpendingAlertHtml(alert.Type, user,
-	            (decimal)totalSpending, (decimal)monthlyBills, (decimal)total, financialGoal, percent);
+	            (decimal)totalSpending, (decimal)monthlyBills, (decimal)total, financialGoal, percent,diff);
 
 				// Send HTML email
 				await emailService.SendEmailAsync(user.Email, "Spending Alert", htmlContent);
@@ -103,7 +105,7 @@ namespace Graduation_Project.Helping_Functions
 			}
             return null;
         }
-	private string GenerateSpendingAlertHtml(int alertType, User user, decimal totalSpending, decimal monthlyBills, decimal total, decimal financialGoal, decimal percent)
+	private string GenerateSpendingAlertHtml(int alertType, User user, decimal totalSpending, decimal monthlyBills, decimal total, decimal financialGoal, decimal percent,decimal diff)
         {
             string headerClass, iconClass, progressClass, headerTitle, icon, message, footerMessage;
 
@@ -304,19 +306,19 @@ namespace Graduation_Project.Helping_Functions
             <div class='spending-details'>
                 <div class='spending-row'>
                     <span>Monthly Budget:</span>
-                    <span>${financialGoal:F2}</span>
+                    <span>L.E{diff:F2}</span>
                 </div>
                 <div class='spending-row'>
                     <span>Purchases:</span>
-                    <span>${totalSpending:F2}</span>
+                    <span>L.E{totalSpending:F2}</span>
                 </div>
                 <div class='spending-row'>
                     <span>Monthly Bills:</span>
-                    <span>${monthlyBills:F2}</span>
+                    <span>L.E{monthlyBills:F2}</span>
                 </div>
                 <div class='spending-row'>
                     <span>Total Spent:</span>
-                    <span>${total:F2}</span>
+                    <span>L.E{total:F2}</span>
                 </div>
             </div>
         </div>
