@@ -45,6 +45,7 @@ Ecofy is a comprehensive expense tracking and price comparison web application t
 
 ### AI & Automation
 - OCR Engine (for text extraction)
+- AI Chatbot (OpenAI API) for natural-language queries about transactions
 - AI Classification Model (for expense categories)
 - Selenium WebDriver (for price scraping)
 
