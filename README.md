@@ -7,7 +7,6 @@
 Ecofy is a comprehensive expense tracking and price comparison web application that leverages AI-powered receipt processing, real-time price scraping, and intelligent expense categorization to help users manage their finances effectively.
 
 [![Version](https://img.shields.io/badge/Version-1.0.0-blue)](https://github.com/Ahmed-0sama/GraduationProject/releases) 
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE) 
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple)](https://dotnet.microsoft.com/) 
 [![React](https://img.shields.io/badge/React-18.2-blue)](https://reactjs.org/) 
 [![Azure](https://img.shields.io/badge/Azure-Cloud-blue)](https://azure.microsoft.com/)
