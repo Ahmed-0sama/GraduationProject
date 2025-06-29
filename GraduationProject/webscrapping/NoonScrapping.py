@@ -12,6 +12,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 # Set up Chrome options
 options = Options()
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--headless")  # Run in headless mode
 options.add_argument("--blink-settings=imagesEnabled=false")
 options.add_argument("--disable-blink-features=AutomationControlled")  # Avoid detection
@@ -31,7 +33,7 @@ driver.get(search_url)
 
 try:
     # Wait for product grid to load
-    WebDriverWait(driver, 1).until(
+    WebDriverWait(driver, 3).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, ".ProductBoxLinkHandler_linkWrapper__b0qZ9"))
     )
 

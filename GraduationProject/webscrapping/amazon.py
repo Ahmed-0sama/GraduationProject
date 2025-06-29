@@ -14,6 +14,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 options = Options()
 options.add_argument("--headless")
 options.add_argument("--blink-settings=imagesEnabled=false")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-blink-features=AutomationControlled")  # Avoid detection
 options.add_argument(
     "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -35,7 +37,7 @@ driver.add_cookie({"name": "lc-main", "value": "en_US"})
 driver.add_cookie({"name": "lc-acbeg", "value": "en_AE"})
 driver.get(f"https://www.amazon.eg/s?k={search_query}")
 
-WebDriverWait(driver, 1).until(
+WebDriverWait(driver, 3).until(
     EC.presence_of_element_located((By.CSS_SELECTOR, "div.s-main-slot div.s-result-item"))
 )
 

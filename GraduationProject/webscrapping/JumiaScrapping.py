@@ -13,6 +13,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Set up Chrome options
 options = Options()
 options.add_argument("--headless")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-web-secruity")
 options.add_argument("--blink-settings=imagesEnabled=false")
 options.add_argument("--disable-blink-features=AutomationControlled")  # Avoid detection
@@ -47,7 +49,7 @@ for cookie in cookies:
 
 driver.get(f"https://www.jumia.com.eg/catalog/?q={search_query}")
 
-WebDriverWait(driver, 1).until(
+WebDriverWait(driver, 3).until(
     EC.presence_of_element_located((By.CSS_SELECTOR, ".c-prd"))
 )
 
