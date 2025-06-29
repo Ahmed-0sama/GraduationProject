@@ -13,6 +13,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Set up Chrome options
 options = Options()
 options.add_argument("--headless")
+options.add_argument("--blink-settings=imagesEnabled=false")
 options.add_argument("--disable-blink-features=AutomationControlled")  # Avoid detection
 options.add_argument(
     "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -34,14 +35,14 @@ driver.add_cookie({"name": "lc-main", "value": "en_US"})
 driver.add_cookie({"name": "lc-acbeg", "value": "en_AE"})
 driver.get(f"https://www.amazon.eg/s?k={search_query}")
 
-WebDriverWait(driver, 10).until(
+WebDriverWait(driver, 1).until(
     EC.presence_of_element_located((By.CSS_SELECTOR, "div.s-main-slot div.s-result-item"))
 )
 
 # Simulate scrolling
-for _ in range(3):
-    driver.execute_script("window.scrollBy(0, 1000);")
-    time.sleep(random.uniform(2, 4))
+for _ in range(1):
+    driver.execute_script("window.scrollBy(0, 250);")
+    time.sleep(random.uniform(0.5, 0.5))
 
 products = driver.find_elements(By.CSS_SELECTOR, "div.s-main-slot div.s-result-item")
 

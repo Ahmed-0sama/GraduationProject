@@ -14,6 +14,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 options = Options()
 options.add_argument("--headless")
 options.add_argument("--disable-web-secruity")
+options.add_argument("--blink-settings=imagesEnabled=false")
 options.add_argument("--disable-blink-features=AutomationControlled")  # Avoid detection
 options.add_argument(
     "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -46,14 +47,14 @@ for cookie in cookies:
 
 driver.get(f"https://www.jumia.com.eg/catalog/?q={search_query}")
 
-WebDriverWait(driver, 10).until(
+WebDriverWait(driver, 1).until(
     EC.presence_of_element_located((By.CSS_SELECTOR, ".c-prd"))
 )
 
 # Simulate scrolling
-for _ in range(3):
-    driver.execute_script("window.scrollBy(0, 1000);")
-    time.sleep(random.uniform(2, 4))
+for _ in range(1):
+    driver.execute_script("window.scrollBy(0, 250);")
+    time.sleep(random.uniform(0.5, 0.5))
 
 products = driver.find_elements(By.CSS_SELECTOR, ".c-prd")
 

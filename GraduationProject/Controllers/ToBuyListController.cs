@@ -62,10 +62,15 @@ namespace Graduation_Project.Controllers
 
 						await db.ToBuyLists.AddAsync(toBuyList);
 						await db.SaveChangesAsync();
+						var totalTimer = new System.Diagnostics.Stopwatch();
+						totalTimer.Start();
 						string category=await GetProductCategoryFromGeminiAsync(dto.ProductName);
-						await amazon.StartScraping(dto.ProductName, toBuyList.ListId, category);
-						await noon.StartScraping(dto.ProductName, toBuyList.ListId, category);
-						await jumia.StartScraping(dto.ProductName, toBuyList.ListId, category);
+						var amazonTask = amazon.StartScraping(dto.ProductName, toBuyList.ListId, category);
+						var noonTask = noon.StartScraping(dto.ProductName, toBuyList.ListId, category);
+						var jumiaTask = jumia.StartScraping(dto.ProductName, toBuyList.ListId, category);
+						await Task.WhenAll(amazonTask, noonTask, jumiaTask);
+						totalTimer.Stop();
+						Console.WriteLine($"[Total Scraping] All sites completed in {totalTimer.ElapsedMilliseconds} ms");
 						UserToBuyList userlist = new UserToBuyList
 						{
 							UserId = user.Id,
