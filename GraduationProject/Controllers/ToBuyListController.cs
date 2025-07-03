@@ -28,7 +28,7 @@ namespace Graduation_Project.Controllers
 		private readonly NoonScrappingService noon;
 		private readonly JumiaScrappingService jumia;
 		private readonly IConfiguration configuration;
-		public ToBuyListController(UserManager<User> userManager, AppDbContext db,AmazonScrappingService amazon,NoonScrappingService noon,JumiaScrappingService jumia,IConfiguration configuration)
+		public ToBuyListController(UserManager<User> userManager, AppDbContext db, AmazonScrappingService amazon, NoonScrappingService noon, JumiaScrappingService jumia, IConfiguration configuration)
 		{
 			this.userManager = userManager;
 			this.db = db;
@@ -62,15 +62,12 @@ namespace Graduation_Project.Controllers
 
 						await db.ToBuyLists.AddAsync(toBuyList);
 						await db.SaveChangesAsync();
-						var totalTimer = new System.Diagnostics.Stopwatch();
-						totalTimer.Start();
-						string category=await GetProductCategoryFromGeminiAsync(dto.ProductName);
+
+						string category = await GetProductCategoryFromGeminiAsync(dto.ProductName);
 						var amazonTask = amazon.StartScraping(dto.ProductName, toBuyList.ListId, category);
 						var noonTask = noon.StartScraping(dto.ProductName, toBuyList.ListId, category);
 						var jumiaTask = jumia.StartScraping(dto.ProductName, toBuyList.ListId, category);
 						await Task.WhenAll(amazonTask, noonTask, jumiaTask);
-						totalTimer.Stop();
-						Console.WriteLine($"[Total Scraping] All sites completed in {totalTimer.ElapsedMilliseconds} ms");
 						UserToBuyList userlist = new UserToBuyList
 						{
 							UserId = user.Id,
@@ -93,10 +90,10 @@ namespace Graduation_Project.Controllers
 						};
 						await db.UserToBuyLists.AddAsync(userlist);
 					}
-						await db.SaveChangesAsync();
-						await transaction.CommitAsync(); // Commit transaction
-						return Ok("Item Saved");
-					
+					await db.SaveChangesAsync();
+					await transaction.CommitAsync(); // Commit transaction
+					return Ok("Item Saved");
+
 				}
 				catch
 				{
@@ -109,7 +106,7 @@ namespace Graduation_Project.Controllers
 		private async Task<string> GetProductCategoryFromGeminiAsync(string itemName)
 		{
 
-				var prompt = $@"
+			var prompt = $@"
 				Classify the following item into one of these categories: Clothes, Electronics, Food & Groceries, Other.
 
 				Item: {itemName}
@@ -214,5 +211,141 @@ namespace Graduation_Project.Controllers
 			db.SaveChanges();
 			return Ok("Item Deleted");
 		}
+		[Authorize]
+		[HttpGet("aisuggestion")]
+		public async Task<IActionResult> aisuggestfortobuy()
+		{
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			var user = await userManager.FindByIdAsync(userId);
+			if (user == null)
+			{
+				return NotFound("User Not Found");
+			}
+
+			var PurchasedProducts = await db.PurchasedProducts
+				.Where(p => p.UserId == user.Id)
+				.ToListAsync();
+			var productList = string.Join(", ", PurchasedProducts.Select(p => p.ItemName));
+			var prompt = $@"
+			Based on the following purchased products by the user: {productList},
+			predict 1 product the user might buy next.
+
+			Then classify the predicted product into one of the following categories:
+			- Clothes
+			- Electronics
+			- Food & Groceries
+			- Other
+
+			Return the result strictly as a valid JSON object, like this:
+			{{
+			  ""suggestion"": ""sports shoes"",
+			  ""category"": ""Clothes""
+			}}
+			Do not include any code block formatting or markdown. Just return pure JSON.
+			";
+
+			var requestPayload = new
+			{
+				contents = new[]
+				{
+			new
+			{
+				parts = new object[]
+				{
+					new { text = prompt }
+				}
+			}
+		}
+			};
+
+			var geminiApiKey = configuration["GeminiApi:geminiApiKey"];
+			using var client = new HttpClient();
+			var requestJson = JsonSerializer.Serialize(requestPayload);
+			var httpContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+			var response = await client.PostAsync(
+				$"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}",
+				httpContent
+			);
+
+			if (!response.IsSuccessStatusCode)
+			{
+				var error = await response.Content.ReadAsStringAsync();
+				return StatusCode((int)response.StatusCode, error);
+			}
+
+			var jsonResponse = await response.Content.ReadAsStringAsync();
+			var geminiResponse = JsonDocument.Parse(jsonResponse);
+			var rawText = geminiResponse.RootElement
+				.GetProperty("candidates")[0]
+				.GetProperty("content")
+				.GetProperty("parts")[0]
+				.GetProperty("text")
+				.GetString();
+			var aiResult = JsonSerializer.Deserialize<Dictionary<string, string>>(rawText);
+			var productName = aiResult["suggestion"];
+			var category = aiResult["category"];
+
+			using var transaction = await db.Database.BeginTransactionAsync();
+			try
+			{
+				var existingList = db.ToBuyLists.FirstOrDefault(l => l.ProductName == productName);
+				if (existingList == null)
+				{
+					var toBuyList = new ToBuyList
+					{
+						ProductName = productName
+					};
+
+					await db.ToBuyLists.AddAsync(toBuyList);
+					await db.SaveChangesAsync();
+
+					// Scraping tasks
+					var amazonTask = amazon.StartScraping(productName, toBuyList.ListId, category);
+					var noonTask = noon.StartScraping(productName, toBuyList.ListId, category);
+					var jumiaTask = jumia.StartScraping(productName, toBuyList.ListId, category);
+					await Task.WhenAll(amazonTask, noonTask, jumiaTask);
+
+					var userlist = new UserToBuyList
+					{
+						UserId = user.Id,
+						ToBuyListId = toBuyList.ListId
+					};
+					await db.UserToBuyLists.AddAsync(userlist);
+				}
+				else
+				{
+					var isAlreadyPresent = db.UserToBuyLists
+						.Any(ul => ul.UserId == user.Id && ul.ToBuyListId == existingList.ListId);
+					if (isAlreadyPresent)
+					{
+						return Ok("Item already Present");
+					}
+
+					var userlist = new UserToBuyList
+					{
+						UserId = user.Id,
+						ToBuyListId = existingList.ListId
+					};
+					await db.UserToBuyLists.AddAsync(userlist);
+				}
+
+				await db.SaveChangesAsync();
+				await transaction.CommitAsync();
+
+				return Ok(new
+				{
+					Message = "Item Saved",
+					SuggestedProduct = productName,
+					Category = category
+				});
+			}
+			catch
+			{
+				await transaction.RollbackAsync();
+				return StatusCode(500, "An error occurred while saving the item.");
+			}
+		}
 	}
 }
+

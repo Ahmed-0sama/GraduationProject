@@ -79,7 +79,7 @@ namespace Graduation_Project.Controllers
 				history.Add(new MessageEntry
 				{
 					Role = "user",
-					Text = "You are given the data about purchased products and monthly bills. Wait for the user's questions before responding."
+					Text = "You are given the data about purchased products and monthly bills. Wait for the user's questions before responding.and Do not use any markdown, code formatting, or backticks in your response. Just return plain text."
 				});
 
 				// Add initial user context with data serialized
@@ -260,5 +260,5 @@ namespace Graduation_Project.Controllers
 
 			return Ok(new { suggestion = replyText });
 		}
-	}
+		}
 }
